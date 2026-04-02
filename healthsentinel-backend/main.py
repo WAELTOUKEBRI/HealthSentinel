@@ -2,8 +2,13 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
 from fastapi.middleware.cors import CORSMiddleware
 import random
 import asyncio
+import logging
 
 app = FastAPI(title="HealthSentinel - Clinical API")
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("HealthSentinel")
 
 # 1. CORS Setup (Essential for Localhost:3000 to talk to Localhost:8000)
 app.add_middleware(
@@ -26,7 +31,7 @@ patients_db = [
 @app.websocket("/ws/patients")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    print("✅ ClinOps WebSocket: Connection Established")
+    logger.info("✅ ClinOps WebSocket: Connection Established")
     try:
         while True:
             # 🔹 Physiological Simulation Logic
@@ -53,9 +58,9 @@ async def websocket_endpoint(websocket: WebSocket):
             await asyncio.sleep(3)
 
     except WebSocketDisconnect:
-        print("❌ ClinOps WebSocket: Client Disconnected")
+        logger.info("❌ WebSocket Session: Terminated by Client")
     except Exception as e:
-        print(f"⚠️ WebSocket Error: {e}")
+        logger.error(f"⚠️ Unexpected System Error: {e}")
 
 # 4. Standard REST Endpoints (For Initial Load or Debugging)
 @app.get("/")
@@ -67,7 +72,7 @@ def read_root():
         "mode": "WebSocket Enabled"
     }
 
-@app.get("/api/patients")
+@app.get("/api/patients", summary="Get all patients", description="Returns the current list of patients, their vitals, and their risk scores.")
 def get_patients_http():
     """Fallback endpoint for standard HTTP requests."""
     return patients_db
