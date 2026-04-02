@@ -9,10 +9,11 @@ RUN npm run build
 # 2. Run Stage (Corrected Paths)
 FROM node:20-alpine AS runner
 WORKDIR /app
+# Set production environment
 ENV NODE_ENV=production
-
-# Next.js standalone creates a subfolder structure. 
-# We need to pull the contents out correctly:
+ENV PORT=3000
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
