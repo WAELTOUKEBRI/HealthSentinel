@@ -40,6 +40,7 @@ export default function PatientStatusCard({
   index = 0 
 }: PatientProps) {
   const badgeVariant = status === "Critical" ? "destructive" : status === "Warning" ? "outline" : "default";
+  const alertVariant = status === "Critical" ? "destructive" : "default";
   const healthPercentage = (heartRate / 150) * 100;
   const alertMessage = status === "Critical" ? "Immediate attention required!" : status === "Warning" ? "Monitor patient closely." : "Patient stable.";
   const chartColor = status === "Critical" ? "#ef4444" : status === "Warning" ? "#f59e0b" : "#10b981";
@@ -111,9 +112,11 @@ export default function PatientStatusCard({
             <Badge variant={badgeVariant} className="font-bold uppercase tracking-wider text-[9px]">{status}</Badge>
           </div>
           <div className="min-h-[36px]">
-            <Alert variant={badgeVariant} className="py-1.5 px-3 border-none bg-opacity-10">
+            <Alert variant={alertVariant} className="py-1.5 px-3 border-none bg-opacity-10">
               <AlertCircle className="h-3 w-3" />
-              <AlertDescription className="text-[9px] font-extrabold uppercase">{alertMessage}</AlertDescription>
+              <AlertDescription className="text-[9px] font-extrabold uppercase">
+                {alertMessage}
+              </AlertDescription>
             </Alert>
           </div>
         </CardHeader>

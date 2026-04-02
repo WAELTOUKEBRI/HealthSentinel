@@ -3,6 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import random
 import asyncio
 import logging
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+PORT = int(os.getenv("PORT", 8000))
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 app = FastAPI(title="HealthSentinel - Clinical API")
 
@@ -13,7 +20,7 @@ logger = logging.getLogger("HealthSentinel")
 # 1. CORS Setup (Essential for Localhost:3000 to talk to Localhost:8000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
+    allow_origins=CORS_ORIGINS, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

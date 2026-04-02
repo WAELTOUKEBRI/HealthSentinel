@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+npm-debug.log
+.npm
+
+# Build output
+.next
+out
+build
+dist
+
+# Environment variables (Never put these in your image!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Version control
+.git
+.gitignore
+
+# IDE / OS files
+.vscode
+.idea
+.DS_Store
+*.log
