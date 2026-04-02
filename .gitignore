@@ -1,13 +1,30 @@
-# Python
-healthsentinel-backend/venv/
+# --- Next.js / Frontend ---
+.next
+out
+build
+dist
+node_modules
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.eslintcache
+.vercel
+
+# --- Backend / Python / VS Code ---
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.venv
+env/
+venv/
+ENV/
+.env
+.pytest_cache
+.vscode/
+.idea/
 
-# Node / Next.js
-healthsentinel-frontend/node_modules/
-healthsentinel-frontend/.next/
-healthsentinel-frontend/out/
-.env*
-
-# OS
+# --- OS Specific ---
 .DS_Store
+Thumbs.db
