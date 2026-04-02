@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Activity, Loader2, Search, Terminal } from "lucide-react";
+import { Loader2, Search, Terminal } from "lucide-react";
 
 import PatientStatusCard from "@/components/PatientStatusCard";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ export default function Dashboard() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
 
-  // 1. Initialize state from localStorage
+  // 1. Sync Mute State from LocalStorage (Navbar Bridge)
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("sonar-muted") === "true";
@@ -37,34 +37,9 @@ export default function Dashboard() {
     return false;
   });
 
-  // 2. Browser "Unlocker": Arm the audio on the first click anywhere
-  useEffect(() => {
-    const unlock = () => {
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/sounds/emergency-alarm.mp3");
-        audioRef.current.loop = true;
-      }
-      
-      audioRef.current.play()
-        .then(() => {
-          audioRef.current?.pause();
-          setAudioEnabled(true);
-          console.log("Sonar System: ARMED");
-        })
-        .catch(() => console.log("Waiting for interaction..."));
-
-      window.removeEventListener("click", unlock);
-    };
-
-    window.addEventListener("click", unlock);
-    return () => window.removeEventListener("click", unlock);
-  }, []);
-
-  // 3. Sync Mute State from Navbar
   useEffect(() => {
     const handleStorageChange = () => {
-      const muted = localStorage.getItem("sonar-muted") === "true";
-      setIsMuted(muted);
+      setIsMuted(localStorage.getItem("sonar-muted") === "true");
     };
     window.addEventListener("storage", handleStorageChange);
     const syncInterval = setInterval(handleStorageChange, 500);
@@ -74,7 +49,53 @@ export default function Dashboard() {
     };
   }, []);
 
-  // 4. Master Audio Controller: Play if Critical, Stop if Clean or Muted
+  // 2. Browser "Unlocker": Arm audio on first click
+  useEffect(() => {
+    const unlock = () => {
+      if (!audioRef.current) {
+        audioRef.current = new Audio("/sounds/emergency-alarm.mp3");
+        audioRef.current.loop = true;
+      }
+      audioRef.current.play().then(() => {
+        audioRef.current?.pause();
+        setAudioEnabled(true);
+        console.log("Sonar System: ARMED");
+      }).catch(() => {});
+      window.removeEventListener("click", unlock);
+    };
+    window.addEventListener("click", unlock);
+    return () => window.removeEventListener("click", unlock);
+  }, []);
+
+  // 3. 🚀 WEBSOCKET LOGIC (Replaces Polling)
+  useEffect(() => {
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws/patients");
+
+    ws.onopen = () => {
+      console.log("✅ Connected to Clinical WebSocket");
+      setIsLoading(false);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setPatients(data);
+    };
+
+    ws.onerror = () => {
+      toast.error("WebSocket Error", {
+        description: "Real-time connection failed. Check backend.",
+      });
+    };
+
+    ws.onclose = () => {
+      console.warn("WebSocket disconnected. Attempting to reconnect...");
+      // Optional: Logic to retry connection could go here
+    };
+
+    return () => ws.close(); // Clean up on unmount
+  }, []);
+
+  // 4. Master Audio Controller
   useEffect(() => {
     const hasCritical = patients.some(p => p.status === "Critical");
 
@@ -90,27 +111,7 @@ export default function Dashboard() {
     }
   }, [patients, isMuted, audioEnabled]);
 
-  const fetchPatients = useCallback(async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/patients");
-      if (!response.ok) throw new Error("Backend connection failed");
-      const data = await response.json();
-      setPatients(data);
-    } catch (error) {
-      console.error("Fetch error:", error);
-      toast.error("System Sync Error");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPatients();
-    const interval = setInterval(fetchPatients, 10000);
-    return () => clearInterval(interval);
-  }, [fetchPatients]);
-
-  // Toast Notifications Only (Audio is handled by the Master Controller above)
+  // 5. Toast Notifications
   useEffect(() => {
     patients.forEach((p) => {
       if (p.status === "Critical" && !notifiedPatients.current.has(p.id)) {
@@ -140,12 +141,12 @@ export default function Dashboard() {
             </div>
             <h1 className="text-2xl font-black tracking-tighter text-foreground uppercase">
               Health<span className="text-primary">Sentinel</span>
-              <span className="ml-2 text-muted-foreground font-mono text-xs opacity-50">v1.0.4</span>
+              <span className="ml-2 text-muted-foreground font-mono text-xs opacity-50">v1.1.0</span>
             </h1>
           </div>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-2">
             <span className="h-1.5 w-1.5 bg-teal-500 rounded-full animate-pulse" />
-            Node: eu-west-3 (Paris)
+            Node: eu-west-3 (Paris) | Mode: WebSocket
           </p>
         </div>
 
@@ -162,7 +163,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Metrics Section */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1"><SystemMetrics /></div>
         <div className="lg:col-span-2 bg-card/50 backdrop-blur-sm p-6 rounded-2xl border border-border/10">
@@ -170,11 +170,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Patients Grid */}
       <section>
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground px-2">
-            Active Biometric Monitors
+            Live Stream: Biometric Monitors
           </h3>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
         </div>
