@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import random
 import asyncio
@@ -9,29 +9,28 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PORT = int(os.getenv("PORT", 8000))
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
-
+CORS_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "*").split(",") if origin.strip()]
 app = FastAPI(title="HealthSentinel - Clinical API")
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("HealthSentinel")
 
-# 1. CORS Setup (Essential for Localhost:3000 to talk to Localhost:8000)
+# 1. CORS Setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS, 
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 2. Global System State (Initial Database)
+# 2. Global System State
 patients_db = [
-    {"id": "#4002", "name": "John Doe", "status": "Critical", "heartRate": 135, "riskScore": 88, "ward": "ICU-01"},
-    {"id": "#3015", "name": "Jane Smith", "status": "Stable", "heartRate": 72, "riskScore": 12, "ward": "General-04"},
-    {"id": "#1092", "name": "Robert Brown", "status": "Warning", "heartRate": 95, "riskScore": 45, "ward": "ICU-03"},
-    {"id": "#2281", "name": "Alice Wilson", "status": "Stable", "heartRate": 68, "riskScore": 15, "ward": "General-02"}
+    {"id": "4002", "name": "John Doe", "status": "Critical", "heartRate": 115, "riskScore": 88, "ward": "ICU-01"},
+    {"id": "3015", "name": "Jane Smith", "status": "Stable", "heartRate": 72, "riskScore": 12, "ward": "General-04"},
+    {"id": "1092", "name": "Robert Brown", "status": "Warning", "heartRate": 95, "riskScore": 45, "ward": "ICU-03"},
+    {"id": "2281", "name": "Alice Wilson", "status": "Stable", "heartRate": 68, "riskScore": 15, "ward": "General-02"}
 ]
 
 # 3. WebSocket Real-Time Stream
@@ -39,56 +38,67 @@ patients_db = [
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("✅ ClinOps WebSocket: Connection Established")
+
+    tick = 0
+    # Refined ECG Pattern
+    ecg_template = [0, 2, 0, -5, 50, -10, 8, 0, 0, 0]
+
     try:
         while True:
-            # 🔹 Physiological Simulation Logic
+            # 60s Total Cycle (20 ticks per phase * 0.8s = 16s each)
+            # Total = 80 ticks for 4 phases
+            cycle_tick = tick % 80
+
+            if cycle_tick < 20:
+                # Phase 1: Bradycardia (BPM < 60)
+                patients_db[0]["status"] = "Critical"
+                base_hr = 48
+            elif cycle_tick < 40:
+                # Phase 2: Normal Sinus Rhythm (BPM 60-85)
+                patients_db[0]["status"] = "Stable"
+                base_hr = 72
+            elif cycle_tick < 60:
+                # Phase 3: Elevated/Warning (BPM 85-110)
+                patients_db[0]["status"] = "Warning"
+                base_hr = 98
+            else:
+                # Phase 4: Tachycardia (BPM > 120)
+                patients_db[0]["status"] = "Critical"
+                base_hr = 128
+
             for patient in patients_db:
-                # Add small "jitter" to heart rate
-                jitter = random.randint(-8, 8)
-                patient["heartRate"] = max(45, min(175, patient["heartRate"] + jitter))
+                # Only John Doe follows the cycle, others stay stable
+                current_base = base_hr if patient["id"] == "4002" else 72
+                
+                # Sync Risk Score to Phase
+                if patient["id"] == "4002":
+                    if current_base < 60: patient["riskScore"] = random.randint(75, 85)
+                    elif current_base > 120: patient["riskScore"] = random.randint(90, 98)
+                    else: patient["riskScore"] = random.randint(10, 40)
 
-                # Update Status based on clinical thresholds
-                if patient["heartRate"] >= 130 or patient["heartRate"] <= 50:
-                    patient["status"] = "Critical"
-                elif 100 <= patient["heartRate"] < 130 or 50 < patient["heartRate"] <= 60:
-                    patient["status"] = "Warning"
-                else:
-                    patient["status"] = "Stable"
+                # ECG Rhythm + Noise
+                patient_offset = int(patient["id"]) % len(ecg_template)
+                phase = (tick + patient_offset) % len(ecg_template)
+                patient["heartRate"] = int(current_base + ecg_template[phase] + random.randint(-1, 1))
 
-                # Calculate Risk Score (Simulated ML Output)
-                patient["riskScore"] = min(100, max(0, int((patient["heartRate"] - 60) * 0.8 + random.randint(0,5))))
-
-            # 🔹 Push to Frontend
             await websocket.send_json(patients_db)
-            
-            # 🔹 Stream Rate: 3 seconds
-            await asyncio.sleep(3)
+            tick += 1
+            await asyncio.sleep(0.8)
 
     except WebSocketDisconnect:
         logger.info("❌ WebSocket Session: Terminated by Client")
     except Exception as e:
         logger.error(f"⚠️ Unexpected System Error: {e}")
 
-# 4. Standard REST Endpoints (For Initial Load or Debugging)
+# 4. Standard REST Endpoints
 @app.get("/")
 def read_root():
-    return {
-        "status": "online", 
-        "system": "HealthSentinel", 
-        "version": "v2.1.0",
-        "mode": "WebSocket Enabled"
-    }
+    return {"status": "online", "system": "HealthSentinel", "version": "v2.3.0"}
 
-@app.get("/api/patients", summary="Get all patients", description="Returns the current list of patients, their vitals, and their risk scores.")
+@app.get("/api/patients")
 def get_patients_http():
-    """Fallback endpoint for standard HTTP requests."""
     return patients_db
-
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    """Prevents 404 errors in browser logs."""
-    return Response(content="", media_type="image/x-icon")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=PORT)

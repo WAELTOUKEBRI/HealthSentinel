@@ -1,30 +1,29 @@
-# --- Next.js / Frontend ---
-.next
-out
-build
-dist
-node_modules
-*.log
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.eslintcache
-.vercel
+# HealthSentinel Root Gitignore
 
-# --- Backend / Python / VS Code ---
-__pycache__/
-*.py[cod]
-*$py.class
-.venv
-env/
-venv/
-ENV/
+# --- Wildcard Matches (Recursive) ---
+**/node_modules/
+**/__pycache__/
+**/venv/
+**/.venv/
+**/env/
+**/.next/
+**/.pytest_cache/
+
+# --- Environment & Secrets ---
 .env
-.pytest_cache
+.env.*
+!.env.example
+
+# --- Build Outputs ---
+**/dist/
+**/build/
+**/out/
+
+# --- OS & IDE ---
+.DS_Store
 .vscode/
 .idea/
+*.log
 
-# --- OS Specific ---
-.DS_Store
-Thumbs.db
+# --- Docker ---
+.docker/
