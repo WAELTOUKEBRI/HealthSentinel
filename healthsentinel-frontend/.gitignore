@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore temporary AWS policy files
+secrets-policy.json
+# Ignore any specific JSON outputs with account details
+infrastructure/ecs/*.json

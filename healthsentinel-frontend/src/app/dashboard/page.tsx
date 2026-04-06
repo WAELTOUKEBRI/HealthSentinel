@@ -50,22 +50,32 @@ export default function Dashboard() {
 
   // 1. WebSocket Engine
   useEffect(() => {
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/patients");
+    const backendUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://healthsentinel-alb-1147999841.eu-west-3.elb.amazonaws.com/ws/patients";
+    const ws = new WebSocket(backendUrl);
+
     ws.onmessage = (event) => {
+      try {
+
       const incomingData = JSON.parse(event.data);
-      if (isLoading) setIsLoading(false);
+        if (isLoading) setIsLoading(false);
       const currentPatients = useSentinelStore.getState().patients;
       const updatedList = incomingData.map((updated: any) => {
         const prev = currentPatients.find((p: any) => p.id === updated.id);
         const history = prev?.history || new Array(12).fill(updated.heartRate);
         const newHistory = [...history.slice(1), updated.heartRate];
         const smoothedBPM = Math.round(newHistory.reduce((a: number, b: number) => a + b, 0) / newHistory.length);
+
         return { ...updated, history: newHistory, heartRate: smoothedBPM, status: getStatusFromBPM(smoothedBPM) };
       });
+
       setPatients(updatedList);
+      } catch (err) {
+        console.error("Data Parse Error:", err);
+    }
     };
+
     return () => ws.close();
-  }, [setPatients, isLoading]);
+  }, [setPatients]);
 
   // 2 & 3. Mute Sync & Audio Unlocker (Unified)
   useEffect(() => {
@@ -160,6 +170,8 @@ export default function Dashboard() {
 
         {!activePatient && (
           <Input
+            id="icu-search"
+            name="icu-search"
             placeholder="Search ICU Nodes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

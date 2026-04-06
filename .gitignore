@@ -27,3 +27,23 @@
 
 # --- Docker ---
 .docker/
+
+# --- Infrastructure & Deployment Scripts ---
+# Ignore local infrastructure configurations (JSON files with ARNs)
+infrastructure/**/*.json
+
+# Ignore temporary CLI policy files
+secrets-policy.json
+
+# --- Terraform ---
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+
+# --- Infrastructure Scripts (Keep scripts, ignore configs) ---
+healthsentinel-frontend/infrastructure/ecs/*.json
