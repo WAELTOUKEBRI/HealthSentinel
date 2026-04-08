@@ -37,7 +37,7 @@ export default function PatientDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://healthsentinel-alb-1147999841.eu-west-3.elb.amazonaws.com";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://healthsentinel-alb-prod-480870509.eu-west-3.elb.amazonaws.com";
         const response = await fetch(`${apiUrl}/api/patients`);
         const data = await response.json();
         const found = data.find((p: any) => String(p.id) === String(params.id));
@@ -46,7 +46,7 @@ export default function PatientDetailPage() {
       } catch (err) { console.error(err); }
     };
     fetchData();
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://healthsentinel-alb-1147999841.eu-west-3.elb.amazonaws.com/ws/patients";
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://healthsentinel-alb-prod-480870509.eu-west-3.elb.amazonaws.com/ws/patients";
       const socket = new WebSocket(wsUrl);
       socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

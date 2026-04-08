@@ -19,3 +19,4 @@ EXPOSE 8000
 
 # 7. Start the server using the standard uvicorn worker for WebSockets
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
