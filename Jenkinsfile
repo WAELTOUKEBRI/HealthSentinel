@@ -72,13 +72,15 @@ pipeline {
             def scannerHome = tool 'SonarScanner'
             withSonarQubeEnv('SonarQube') {
                 // We added -e for errors and -X for full trace
-                sh "${scannerHome}/bin/sonar-scanner -e -X " +
-                   "-Dsonar.projectKey=HealthSentinel " +
-                   "-Dsonar.sources=. " +
-                   "-Dsonar.host.url=http://172.24.43.223:9000 " +
-                   "-Dsonar.login=${SONAR_AUTH_TOKEN} " +
-                   "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
-            }
+                sh """
+                ${scannerHome}/bin/sonar-scanner -X \
+                 -Dsonar.projectKey=HealthSentinel \
+                 -Dsonar.sources=. \
+                 -Dsonar.host.url=http://172.24.43.223:9000 \
+                 -Dsonar.token=sqa_PASTE_YOUR_ACTUAL_TOKEN_HERE \
+                 -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
+                   """       
+                   }
         }
     }
 }
