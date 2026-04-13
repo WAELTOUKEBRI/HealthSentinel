@@ -70,7 +70,7 @@ pipeline {
     steps {
         script {
             // Force Jenkins to locate the tool defined in 'Global Tool Configuration'
-            def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+            def scannerHome = tool name: 'SonarScanner'
             
             withSonarQubeEnv('SonarQube') { 
                 sh "${scannerHome}/bin/sonar-scanner " +
