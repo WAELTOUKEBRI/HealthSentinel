@@ -25,7 +25,7 @@ pipeline {
                 }
                 stage('Bandit (Python)') {
                     steps {
-                        // Using --volumes-from to ensure it sees the files on your Lenovo's Jenkins setup
+                        // Updated to reference your Acer's Jenkins setup
                         sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend cytopia/bandit -r . --exclude ./venv -ll"
                     }
                 }
@@ -41,53 +41,55 @@ pipeline {
         }
 
         stage('Prisma Validation') {
-    steps {
-        echo "🚀 Senior Approach: Validating Schema within Application Context..."
-        dir('healthsentinel-backend') {
-            sh '''
-                # Build only up to the 'builder' stage
-                docker build --target builder -t healthsentinel-backend:linter .
+            steps {
+                echo "🚀 Senior Approach: Validating Schema within Application Context..."
+                dir('healthsentinel-backend') {
+                    sh '''
+                        # Build only up to the 'builder' stage
+                        docker build --target builder -t healthsentinel-backend:linter .
 
-                # Run validation in the environment that has all dependencies
-                docker run --rm -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" healthsentinel-backend:linter npx prisma validate --schema=./prisma/schema.prisma
-            '''
+                        # Run validation in the environment that has all dependencies
+                        docker run --rm -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" healthsentinel-backend:linter npx prisma validate --schema=./prisma/schema.prisma
+                    '''
+                }
+            }
         }
-    }
-}
+
         stage('Build & Image Scanning') {
             steps {
                 dir('healthsentinel-backend') {
                     echo "Building Backend (No-Cache)..."
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
 
-                    echo "Scanning with Trivy..."
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image ${DOCKER_IMAGE_BACKEND}:latest'
+                    echo "🚀 Senior Scan: Filtering for actionable HIGH/CRITICAL vulnerabilities..."
+                    // 1. Fail the build if CRITICALS are found
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --exit-code 1 --severity CRITICAL --ignore-unfixed ${DOCKER_IMAGE_BACKEND}:latest'
+                    
+                    // 2. Report HIGH vulnerabilities without failing (for manual review)
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH --ignore-unfixed ${DOCKER_IMAGE_BACKEND}:latest'
                 }
             }
         }
 
-         stage('SonarQube Quality Gate') {
-    steps {
-        script {
-            def scannerHome = tool 'SonarScanner'
-            
-            // This wrapper pulls the URL from Jenkins System settings
-            withSonarQubeEnv('SonarQube') { 
-                // This wrapper pulls the Secret from Jenkins Credentials
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh """
-                    ${scannerHome}/bin/sonar-scanner \
-                    -Dsonar.projectKey=HealthSentinel \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=${SONAR_HOST_URL} \
-                    -Dsonar.token=${SONAR_TOKEN} \
-                    -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
-                    """
-                }
-              }
-            }
-          }
-        }       
-      }    
-    }
+        stage('SonarQube Quality Gate') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
 
+                    withSonarQubeEnv('SonarQube') {
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                            sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=HealthSentinel \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.token=${SONAR_TOKEN} \
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
