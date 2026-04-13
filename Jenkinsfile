@@ -74,6 +74,7 @@ pipeline {
             
             withSonarQubeEnv('SonarQube') { 
                 sh "${scannerHome}/bin/sonar-scanner " +
+                   "-X " + // Add this for full debug details
                    "-Dsonar.projectKey=HealthSentinel " +
                    "-Dsonar.sources=. " +
                    "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
