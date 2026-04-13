@@ -12,6 +12,7 @@ ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN rm -rf .next
 RUN npm run build
 
 # 2. Run Stage
@@ -19,7 +20,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=300i0
 ENV HOSTNAME="0.0.0.0"
 
 # --- SENIOR SECURITY: Setup User FIRST ---
