@@ -67,17 +67,19 @@ pipeline {
         }
 
         stage('SonarQube Quality Gate') {
-            steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('SonarQube') {
-                        sh "${scannerHome}/bin/sonar-scanner " +
-                           "-Dsonar.projectKey=HealthSentinel " +
-                           "-Dsonar.sources=. " +
-                           "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
-                    }
+    steps {
+        script {
+            // Force Jenkins to locate the tool defined in 'Global Tool Configuration'
+            def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+            
+            withSonarQubeEnv('SonarQube') { 
+                sh "${scannerHome}/bin/sonar-scanner " +
+                   "-Dsonar.projectKey=HealthSentinel " +
+                   "-Dsonar.sources=. " +
+                   "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
                 }
+              }
             }
+          }
         }
-    }
-}
+      }
