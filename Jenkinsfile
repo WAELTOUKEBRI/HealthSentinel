@@ -41,14 +41,19 @@ pipeline {
         }
 
         stage('Prisma Validation') {
-            steps {
-                echo "Validating Database Schema..."
-                // 1. node:22 (full) includes OpenSSL, so no more libssl errors
-                // 2. --volumes-from hs-jenkins finds your files correctly
-                sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend -e PRISMA_SKIP_CONFIG=true node:22 npx prisma@6.4.1 validate --schema=./prisma/schema.prisma"
-            }
-        }
+    steps {
+        echo "🚀 Senior Approach: Validating Schema within Application Context..."
+        dir('healthsentinel-backend') {
+            sh '''
+                # Build only up to the 'builder' stage
+                docker build --target builder -t healthsentinel-backend:linter .
 
+                # Run validation in the environment that has all dependencies
+                docker run --rm healthsentinel-backend:linter npx prisma validate --schema=./prisma/schema.prisma
+            '''
+        }
+    }
+}
         stage('Build & Image Scanning') {
             steps {
                 dir('healthsentinel-backend') {
