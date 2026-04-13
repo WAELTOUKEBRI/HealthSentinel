@@ -64,7 +64,7 @@ pipeline {
 
                 // 2. FRONTEND Build & Scan
                 echo "Building Frontend..."
-                sh 'docker build -t ${DOCKER_IMAGE_FRONTEND}:latest ./healthsentinel-frontend'
+                sh 'docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ./healthsentinel-frontend'
                 echo "🚀 Senior Scan: Frontend..."
                 sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH,CRITICAL --ignore-unfixed ${DOCKER_IMAGE_FRONTEND}:latest'
             }
