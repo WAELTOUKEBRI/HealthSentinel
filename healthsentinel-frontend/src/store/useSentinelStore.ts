@@ -1,12 +1,19 @@
 import { create } from 'zustand';
 
-interface Patient {
+export interface Patient {
   id: string;
   name: string;
   status: "Critical" | "Warning" | "Stable";
   heartRate: number;
   history?: number[];
+  // NEW: NEWS2 parameters matching Prisma
+  respirationRate?: number;
+  oxygenSaturation?: number;
+  systolicBP?: number;
+  temperature?: number;
+  consciousness?: "Alert" | "Voice" | "Pain" | "Unresponsive"; // AVPU Scale
   ward: string;
+  riskScore: number;
 }
 
 interface SentinelStore {
@@ -21,9 +28,10 @@ export const useSentinelStore = create<SentinelStore>((set) => ({
   patients: [],
   criticalCount: 0,
   selectedPatientId: null,
-  setPatients: (patients) => set({
-    patients,
-    criticalCount: patients.filter(p => p.status === 'Critical').length
-  }),
+  setPatients: (patients) => {
+    
+    const criticalCount = patients.filter(p => p.status === 'Critical').length;
+    set({ patients, criticalCount });
+  },
   setSelectedPatientId: (id) => set({ selectedPatientId: id }),
 }));

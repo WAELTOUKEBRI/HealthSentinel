@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Activity, ShieldCheck, History, Pill, ArrowLeft, ClipboardList } from "lucide-react";
+import { Activity, ShieldCheck, History, Pill, ArrowLeft, ClipboardList, Wind, Droplets, Thermometer, Zap } from "lucide-react";
 import { useSentinelStore } from "@/store/useSentinelStore";
 import PatientStatusCard from "@/components/PatientStatusCard";
 import { Input } from "@/components/ui/input";
@@ -14,9 +15,10 @@ const SkeletonCard = () => (
   <div className="h-64 w-full bg-card/20 animate-pulse rounded-2xl border border-white/5" />
 );
 
-const getStatusFromBPM = (bpm: number): "Critical" | "Warning" | "Stable" => {
-  if (bpm > 115 || bpm < 55) return "Critical";
-  if (bpm > 90 || bpm < 65) return "Warning";
+// Updated for NEWS2 Awareness
+const getStatusFromVitals = (p: any): "Critical" | "Warning" | "Stable" => {
+  if (p.heartRate > 120 || p.heartRate < 50 || p.oxygenSaturation < 92) return "Critical";
+  if (p.heartRate > 100 || p.heartRate < 60 || p.oxygenSaturation < 95) return "Warning";
   return "Stable";
 };
 
@@ -27,72 +29,68 @@ export default function Dashboard() {
   const { patients, setPatients } = useSentinelStore();
   const notifiedPatients = useRef<Set<string>>(new Set());
 
-  // 🔊 AUDIO & ALARM SYSTEM STATE
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
-  // 🏥 AI DIAGNOSTIC LOGIC
-  const getAIReason = (bpm: number) => {
-    if (bpm > 120) return "ACUTE TACHYCARDIA: Possible SVT. Check electrolyte panel and 12-lead ECG.";
-    if (bpm < 60) return "BRADYCARDIAL EVENT: Sinus Node Dysfunction suspected. Review drug-induced depression.";
-    if (bpm >= 90) return "SYSTEMIC DISTRESS: Sustained compensatory rhythm. Check sepsis markers.";
+  const getAIReason = (p: any) => {
+    if (p.heartRate > 120) return "ACUTE TACHYCARDIA: Possible SVT. Check electrolyte panel and 12-lead ECG.";
+    if (p.oxygenSaturation < 94) return "HYPOXEMIA DETECTED: Low oxygen saturation. Verify O2 delivery and lung auscultation.";
+    if (p.heartRate < 60) return "BRADYCARDIAL EVENT: Sinus Node Dysfunction suspected. Review drug-induced depression.";
     return "HEMODYNAMIC STABILITY: Patient baseline sinus rhythm maintained.";
   };
 
-  const getProtocols = (bpm: number) => {
-    return [
-      "Ensure continuous pulse oximetry monitoring.",
-      "Evaluate for potential AV-block medications.",
-      "Review latest Potassium (K+) and Magnesium (Mg++) levels.",
-      "Update primary physician on current telemetry trends."
-    ];
+  const getProtocols = (p: any) => {
+    const protocols = ["Ensure continuous pulse oximetry monitoring.", "Update primary physician on telemetry trends."];
+    if (p.status === "Critical") protocols.push("Initiate Emergency Protocol 402.", "Prepare arterial blood gas (ABG) kit.");
+    return protocols;
   };
 
-  // 1. WebSocket Engine
+  // 1. WebSocket Engine with NEWS2 Data Mapping
   useEffect(() => {
     const backendUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://healthsentinel-alb-prod-480870509.eu-west-3.elb.amazonaws.com/ws/patients";
     const ws = new WebSocket(backendUrl);
 
     ws.onmessage = (event) => {
       try {
-
-      const incomingData = JSON.parse(event.data);
+        const incomingData = JSON.parse(event.data);
         if (isLoading) setIsLoading(false);
-      const currentPatients = useSentinelStore.getState().patients;
-      const updatedList = incomingData.map((updated: any) => {
-        const prev = currentPatients.find((p: any) => p.id === updated.id);
-        const history = prev?.history || new Array(12).fill(updated.heartRate);
-        const newHistory = [...history.slice(1), updated.heartRate];
-        const smoothedBPM = Math.round(newHistory.reduce((a: number, b: number) => a + b, 0) / newHistory.length);
+        const currentPatients = useSentinelStore.getState().patients;
+        
+        const updatedList = incomingData.map((updated: any) => {
+          const prev = currentPatients.find((p: any) => p.id === updated.id);
+          const history = prev?.history || new Array(12).fill(updated.heartRate);
+          const newHistory = [...history.slice(1), updated.heartRate];
+          
+          // Map simulation or real DB fields
+          const pData = {
+            ...updated,
+            history: newHistory,
+            // Fallbacks for demo simulation stability
+            oxygenSaturation: updated.oxygenSaturation || 98,
+            respirationRate: updated.respirationRate || 16,
+            temperature: updated.temperature || 36.8,
+            systolicBP: updated.systolicBP || 122,
+          };
 
-        return { ...updated, history: newHistory, heartRate: smoothedBPM, status: getStatusFromBPM(smoothedBPM) };
-      });
+          return { ...pData, status: getStatusFromVitals(pData) };
+        });
 
-      setPatients(updatedList);
+        setPatients(updatedList);
       } catch (err) {
         console.error("Data Parse Error:", err);
-    }
+      }
     };
 
     return () => ws.close();
-  }, [setPatients]);
+  }, [setPatients, isLoading]);
 
-  // 2 & 3. Mute Sync & Audio Unlocker (Unified)
   useEffect(() => {
-    const syncMute = () => {
-      setIsMuted(localStorage.getItem("sonar-muted") === "true");
-    };
-    
-    const unlock = () => {
-      setAudioEnabled(true);
-      window.removeEventListener("click", unlock);
-    };
-
+    const syncMute = () => setIsMuted(localStorage.getItem("sonar-muted") === "true");
+    const unlock = () => { setAudioEnabled(true); window.removeEventListener("click", unlock); };
     syncMute();
     window.addEventListener("storage", syncMute);
     window.addEventListener("click", unlock);
     const interval = setInterval(syncMute, 1000);
-
     return () => {
       window.removeEventListener("storage", syncMute);
       window.removeEventListener("click", unlock);
@@ -100,23 +98,16 @@ export default function Dashboard() {
     };
   }, []);
 
-  // 4. MASTER ALARM ENGINE (HMR-SAFE Singleton)
-  // This version attaches the audio to the global window to prevent multiple overlapping sounds during dev-reloads.
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (!(window as any).__sentinelAudio) {
         (window as any).__sentinelAudio = new Audio("/sounds/emergency-alarm.mp3");
         (window as any).__sentinelAudio.loop = true;
       }
-
       const audio = (window as any).__sentinelAudio;
       const hasCritical = patients.some(p => p.status === "Critical");
-      const shouldPlay = hasCritical && !isMuted && audioEnabled;
-
-      if (shouldPlay) {
-        if (audio.paused) {
-          audio.play().catch(() => console.warn("Interaction required for audio"));
-        }
+      if (hasCritical && !isMuted && audioEnabled) {
+        if (audio.paused) audio.play().catch(() => {});
       } else {
         audio.pause();
         audio.currentTime = 0;
@@ -124,17 +115,12 @@ export default function Dashboard() {
     }
   }, [patients, isMuted, audioEnabled]);
 
-  // 5. Alarm Toasts with AI Reasons
   useEffect(() => {
     patients.forEach((p) => {
       if (p.status === "Critical" && !notifiedPatients.current.has(p.id)) {
         toast.error(`VITAL SIGN ALERT: ${p.name || p.id}`, {
           className: "bg-slate-950 border-red-500/50 text-white",
-          description: (
-            <p className="text-[11px] font-bold italic text-red-400">
-              "{getAIReason(p.heartRate)}"
-            </p>
-          ),
+          description: <p className="text-[11px] font-bold italic text-red-400">"{getAIReason(p)}"</p>,
           duration: 10000,
         });
         notifiedPatients.current.add(p.id);
@@ -157,14 +143,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <Activity className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-black tracking-tighter uppercase">
-              Health<span className="text-primary">Sentinel</span> <span className="text-[10px] text-muted-foreground ml-2 opacity-50">V1.1.0</span>
+              Health<span className="text-primary">Sentinel</span> <span className="text-[10px] text-muted-foreground ml-2 opacity-50">V1.2.0</span>
             </h1>
           </div>
           <div className="flex items-center gap-2 font-mono text-[9px] font-bold tracking-widest text-muted-foreground uppercase bg-white/5 px-3 py-1 rounded-full w-fit border border-white/5">
             <span className="text-primary animate-pulse">{'>_'}</span>
-            <span>NODE: EU-WEST-3 (PARIS)</span>
-            <span className="opacity-30">|</span>
-            <span>MODE: WEBSOCKET</span>
+            <span>NODE: EU-WEST-3 (RDS-CONNECTED)</span>
           </div>
         </div>
 
@@ -186,14 +170,14 @@ export default function Dashboard() {
             <div className="flex items-end justify-between">
               <div className="space-y-4">
                 <button onClick={() => setSelectedPatient(null)} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-white/5 transition-colors">
-                  <ArrowLeft className="h-4 w-4" /> Back
+                  <ArrowLeft className="h-4 w-4" /> Back to Grid
                 </button>
                 <h2 className="text-5xl font-black uppercase tracking-tighter flex items-center gap-3">
                   {activePatient.name} <span className="text-primary">#{activePatient.id}</span>
                 </h2>
               </div>
               <div className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border shadow-lg ${
-                activePatient.status === 'Critical' ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-emerald-500/10 border-emerald-500 text-emerald-500'
+                activePatient.status === 'Critical' ? 'bg-red-500/10 border-red-500 text-red-500 shadow-red-500/20' : 'bg-emerald-500/10 border-emerald-500 text-emerald-500'
               }`}>
                 {activePatient.status}
               </div>
@@ -211,16 +195,33 @@ export default function Dashboard() {
                  </div>
                  <div className="h-[350px]"><HeartRateChart /></div>
               </div>
+
               <div className="lg:col-span-4 space-y-6">
+                {/* Expanded Vitals Panel */}
                 <div className="bg-card/40 border border-white/10 rounded-[2rem] p-8 shadow-xl">
-                  <div className="flex items-center gap-2 mb-6 text-muted-foreground uppercase text-[10px] font-black tracking-[0.2em]"><History className="h-4 w-4" /> CLINICAL HISTORY</div>
-                  <div className="space-y-4 text-xs font-bold uppercase">
-                    <div className="flex justify-between border-b border-white/5 pb-3"><span>Admission:</span><span>2026-04-01</span></div>
-                    <div className="flex justify-between pt-1"><span>Risk Score:</span><span className="text-primary">14%</span></div>
+                  <div className="flex items-center gap-2 mb-6 text-muted-foreground uppercase text-[10px] font-black tracking-[0.2em]"><Zap className="h-4 w-4" /> NEWS2 PARAMETERS</div>
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="text-[9px] text-muted-foreground block uppercase font-black">SpO2</span>
+                        <span className="text-xl font-black text-blue-400">{activePatient.oxygenSaturation}%</span>
+                     </div>
+                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="text-[9px] text-muted-foreground block uppercase font-black">Resp</span>
+                        <span className="text-xl font-black text-sky-400">{activePatient.respirationRate}</span>
+                     </div>
+                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="text-[9px] text-muted-foreground block uppercase font-black">Temp</span>
+                        <span className="text-xl font-black text-orange-400">{activePatient.temperature}°C</span>
+                     </div>
+                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="text-[9px] text-muted-foreground block uppercase font-black">BP</span>
+                        <span className="text-xl font-black text-emerald-400">{activePatient.systolicBP}</span>
+                     </div>
                   </div>
                 </div>
+
                 <div className="bg-card/40 border border-white/10 rounded-[2rem] p-8 shadow-xl">
-                  <div className="flex items-center gap-2 mb-6 text-muted-foreground uppercase text-[10px] font-black tracking-[0.2em]"><Pill className="h-4 w-4" /> MEDICATIONS</div>
+                  <div className="flex items-center gap-2 mb-6 text-muted-foreground uppercase text-[10px] font-black tracking-[0.2em]"><Pill className="h-4 w-4" /> ACTIVE MEDICATIONS</div>
                   <div className="space-y-3">
                     {["Amiodarone - 150mg IV", "Heparin - 5000 units SC"].map((med, i) => (
                       <div key={i} className="p-4 bg-primary/5 border border-primary/10 rounded-2xl text-[11px] font-bold text-primary">{med}</div>
@@ -235,13 +236,13 @@ export default function Dashboard() {
                 <div>
                     <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-6">AI DIAGNOSTIC SUMMARY</h4>
                     <p className="text-xl font-medium italic text-foreground/90 leading-relaxed bg-white/5 p-8 rounded-[2rem] border border-white/5 backdrop-blur-sm">
-                      "{getAIReason(activePatient.heartRate)}"
+                      "{getAIReason(activePatient)}"
                     </p>
                 </div>
                 <div>
                     <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground mb-6">RECOMMENDED PROTOCOL</h4>
                     <div className="space-y-4">
-                        {getProtocols(activePatient.heartRate).map((rec, i) => (
+                        {getProtocols(activePatient).map((rec, i) => (
                             <div key={i} className="flex items-start gap-4 text-[13px] text-foreground/80 bg-white/5 p-4 rounded-2xl border border-white/5">
                               <ShieldCheck className="h-5 w-5 text-emerald-500 mt-0.5" />
                               <span className="font-medium">{rec}</span>
@@ -249,9 +250,6 @@ export default function Dashboard() {
                         ))}
                     </div>
                 </div>
-            </div>
-            <div className="flex justify-center pt-4 pb-12">
-               <button onClick={() => setSelectedPatient(null)} className="px-12 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-transform shadow-xl shadow-primary/20">Acknowledge Report</button>
             </div>
           </motion.div>
         ) : (
@@ -267,8 +265,12 @@ export default function Dashboard() {
                   <><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /></>
                 ) : (
                   filteredPatients.map((p, idx) => (
-                    <div key={p.id} onClick={() => setSelectedPatient(p)} className={`cursor-pointer transition-transform hover:scale-[1.02] ${p.status === 'Critical' ? 'animate-critical' : ''}`}>
-                      <PatientStatusCard name={p.name} ward={p.ward} status={p.status} heartRate={p.heartRate} id={p.id} heartRateHistory={p.history || [p.heartRate]} index={idx} />
+                    <div key={p.id} onClick={() => setSelectedPatient(p)} className={cn("cursor-pointer transition-transform hover:scale-[1.02]", p.status === 'Critical' && 'animate-critical')}>
+                      <PatientStatusCard 
+                        {...p} 
+                        heartRateHistory={p.history || [p.heartRate]} 
+                        index={idx} 
+                      />
                     </div>
                   ))
                 )}

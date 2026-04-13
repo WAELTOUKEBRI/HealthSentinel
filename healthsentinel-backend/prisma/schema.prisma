@@ -1,1 +1,58 @@
+// This is your database configuration
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- CORE MODELS ---
+
+model Patient {
+  id            String    @id @default(cuid())
+  name          String
+  ward          String    // e.g., "ICU", "Ward A"
+  admissionDate DateTime  @default(now())
+
+  // Relations
+  vitals        VitalSign[]
+  riskScores    RiskPrediction[]
+}
+
+model VitalSign {
+  id               String   @id @default(cuid())
+  patientId        String
+  patient          Patient  @relation(fields: [patientId], references: [id])
+
+  // NEWS2 Parameters
+  respirationRate  Int
+  oxygenSaturation Int
+  systolicBP       Int
+  pulseRate        Int
+  temperature      Float
+  consciousness    String   // Alert, Voice, Pain, Unresponsive (AVPU)
+
+  createdAt        DateTime @default(now())
+}
+
+model RiskPrediction {
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      Patient  @relation(fields: [patientId], references: [id])
+
+  score        Float    // The ML output (0.0 to 1.0)
+  severity     String   // "LOW", "MEDIUM", "HIGH"
+  reasoning    String?  // Explainable AI (SHAP values)
+
+  createdAt    DateTime @default(now())
+}
+
+model Staff {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  role        String   // "ADMIN", "DOCTOR", "NURSE"
+  trainingCompleted Boolean @default(false)
+}
 

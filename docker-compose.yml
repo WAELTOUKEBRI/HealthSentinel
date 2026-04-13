@@ -1,27 +1,46 @@
 services:
-  # The Backend
+  # --- THE BRAIN (DATABASE) ---
+  db:
+    image: postgres:16-alpine
+    container_name: hs-db
+    restart: always
+    environment:
+      POSTGRES_USER: wael_admin
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_DB: healthsentinel_db
+    ports:
+      - "5432:5432"
+    networks:
+      - healthsentinel-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # --- THE BACKEND ---
   backend:
     build:
       context: ./healthsentinel-backend
       dockerfile: Dockerfile
-      container_name: hs-backend
+    container_name: hs-backend
     environment:
       - PORT=8000
+      - DATABASE_URL=postgresql://wael_admin:dev_password_123@db:5432/healthsentinel_db
       - CORS_ORIGINS=http://localhost:3000
     ports:
       - "8000:8000"
+    depends_on:
+      - db
     networks:
       - healthsentinel-network
 
-  # The Frontend
+  # --- THE FRONTEND ---
   frontend:
     build:
       context: ./healthsentinel-frontend
       dockerfile: Dockerfile
-      container_name: hs-frontend
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/patients
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/patients
+    container_name: hs-frontend
     ports:
       - "3000:3000"
     depends_on:
@@ -29,7 +48,41 @@ services:
     networks:
       - healthsentinel-network
 
+  # --- DEVSECOPS: SONARQUBE ---
+  sonarqube:
+    image: sonarqube:community
+    container_name: hs-sonarqube
+    ports:
+      - "9000:9000"
+    networks:
+      - healthsentinel-network
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+  # --- DEVSECOPS: JENKINS ---
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: hs-jenkins
+    privileged: true
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    networks:
+      - healthsentinel-network
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # Allows Jenkins to run Docker commands
+
 networks:
-    healthsentinel-network:
+  healthsentinel-network:
     driver: bridge
 
+volumes:
+  postgres_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  jenkins_data:
