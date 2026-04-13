@@ -24,7 +24,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # --- SENIOR SECURITY: Non-Root User ---
-RUN addgroup --system --gid 1001 nodejs
+RUN addgroup --system --gid 1001 nodejs && \
 RUN adduser --system --uid 1001 nextjs
 
 # Only copy what is strictly necessary
