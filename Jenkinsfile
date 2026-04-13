@@ -69,20 +69,18 @@ pipeline {
         stage('SonarQube Quality Gate') {
     steps {
         script {
-            // Force Jenkins to locate the tool defined in 'Global Tool Configuration'
-            def scannerHome = tool name: 'SonarScanner'
-            
-            withSonarQubeEnv('SonarQube') { 
-                sh "${scannerHome}/bin/sonar-scanner " +
-                   "-X " + // Add this for full debug details
+            def scannerHome = tool 'SonarScanner'
+            withSonarQubeEnv('SonarQube') {
+                // We added -e for errors and -X for full trace
+                sh "${scannerHome}/bin/sonar-scanner -e -X " +
                    "-Dsonar.projectKey=HealthSentinel " +
                    "-Dsonar.sources=. " +
-                   "-Dsonar.host.url=http://172.24.43.223:9000 " + // Hardcode it briefly to test
+                   "-Dsonar.host.url=http://172.24.43.223:9000 " +
                    "-Dsonar.login=${SONAR_AUTH_TOKEN} " +
                    "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
-                }
-              }
             }
-          }
+        }
+    }
+}
         }
       }
