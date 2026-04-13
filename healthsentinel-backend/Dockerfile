@@ -42,6 +42,9 @@ WORKDIR /app
 # We remove the package manager cache immediately to reduce Trivy noise
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    openssl \
+    libssl3 \
+    && apt-get upgrade -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
