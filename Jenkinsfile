@@ -25,7 +25,6 @@ pipeline {
                 }
                 stage('Bandit (Python)') {
                     steps {
-                        // Updated to reference your Acer's Jenkins setup
                         sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend cytopia/bandit -r . --exclude ./venv -ll"
                     }
                 }
@@ -42,13 +41,10 @@ pipeline {
 
         stage('Prisma Validation') {
             steps {
-                echo "🚀 Senior Approach: Validating Schema within Application Context..."
+                echo "🚀 Senior Approach: Validating Schema..."
                 dir('healthsentinel-backend') {
                     sh '''
-                        # Build only up to the 'builder' stage
                         docker build --target builder -t healthsentinel-backend:linter .
-
-                        # Run validation in the environment that has all dependencies
                         docker run --rm -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" healthsentinel-backend:linter npx prisma validate --schema=./prisma/schema.prisma
                     '''
                 }
@@ -57,17 +53,20 @@ pipeline {
 
         stage('Build & Image Scanning') {
             steps {
+                // 1. BACKEND Build & Scan
                 dir('healthsentinel-backend') {
-                    echo "Building Backend (No-Cache)..."
+                    echo "Building Backend..."
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
-
-                    echo "🚀 Senior Scan: Filtering for actionable HIGH/CRITICAL vulnerabilities..."
-                    // 1. Fail the build if CRITICALS are found
+                    echo "🚀 Senior Scan: Backend..."
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --exit-code 1 --severity CRITICAL --ignore-unfixed ${DOCKER_IMAGE_BACKEND}:latest'
-                    
-                    // 2. Report HIGH vulnerabilities without failing (for manual review)
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH --ignore-unfixed ${DOCKER_IMAGE_BACKEND}:latest'
                 }
+
+                // 2. FRONTEND Build & Scan
+                echo "Building Frontend..."
+                sh 'docker build -t ${DOCKER_IMAGE_FRONTEND}:latest ./healthsentinel-frontend'
+                echo "🚀 Senior Scan: Frontend..."
+                sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH,CRITICAL --ignore-unfixed ${DOCKER_IMAGE_FRONTEND}:latest'
             }
         }
 
@@ -75,7 +74,6 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
-
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                             sh """
@@ -90,6 +88,14 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+
+    // This keeps your Acer from running out of space
+    post {
+        always {
+            echo "🧹 Cleaning up intermediate images..."
+            sh 'docker image prune -f'
         }
     }
 }
