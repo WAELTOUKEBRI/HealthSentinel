@@ -49,7 +49,7 @@ pipeline {
                 docker build --target builder -t healthsentinel-backend:linter .
 
                 # Run validation in the environment that has all dependencies
-                docker run --rm healthsentinel-backend:linter npx prisma validate --schema=./prisma/schema.prisma
+                docker run --rm -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" healthsentinel-backend:linter npx prisma validate --schema=./prisma/schema.prisma
             '''
         }
     }
