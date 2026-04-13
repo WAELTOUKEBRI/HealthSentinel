@@ -84,8 +84,10 @@ pipeline {
                     -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
                     """
                 }
+              }
             }
-        }
+          }
+        }       
+      }    
     }
-} 
 
