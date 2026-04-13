@@ -77,7 +77,7 @@ pipeline {
                  -Dsonar.projectKey=HealthSentinel \
                  -Dsonar.sources=. \
                  -Dsonar.host.url=http://172.24.43.223:9000 \
-                 -Dsonar.token=sqa_PASTE_YOUR_ACTUAL_TOKEN_HERE \
+                 -Dsonar.token=sqa_2805e31f91cc54a2c7c5bb7f8e9d0e961aef229b \
                  -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
                    """       
                    }
