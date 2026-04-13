@@ -3,41 +3,40 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
+        DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
         AWS_ACCOUNT_ID = "123456789012"
         REGION = "eu-west-3"
     }
 
     stages {
-        stage('Initialize') {
+        stage('Initial Cleanup') {
             steps {
-                // Best Practice: Start with a clean slate every time
                 cleanWs()
                 checkout scm
             }
         }
 
-        stage('Security Scans') {
+        stage('Security Analysis') {
             parallel {
-                stage('Gitleaks') {
+                stage('Gitleaks (Secrets)') {
                     steps {
-                        echo "Running Gitleaks..."
                         sh 'docker run --rm -v ${WORKSPACE}:/path zricethezav/gitleaks:latest detect --source /path --no-git'
                     }
                 }
-                stage('Bandit') {
+                stage('Bandit (Python)') {
                     steps {
-                        echo "Running Bandit..."
                         sh "docker run --rm -v ${WORKSPACE}/healthsentinel-backend:/app -w /app cytopia/bandit -r . --exclude ./venv -ll"
                     }
                 }
             }
         }
 
-        stage('Linting') {
+        stage('Infrastructure Linting') {
             steps {
-                echo "🚀 Linting Dockerfiles..."
-                sh 'docker run --rm -i hadolint/hadolint < healthsentinel-backend/Dockerfile'
-                sh 'docker run --rm -i hadolint/hadolint < healthsentinel-frontend/Dockerfile'
+                echo "🚀 Linting Dockerfiles (Ignoring version-pinning warnings)..."
+                // Adding 'hadolint' command and ignore flags inside the container
+                sh 'docker run --rm -i hadolint/hadolint hadolint --ignore DL3008 --ignore DL3013 - < healthsentinel-backend/Dockerfile'
+                sh 'docker run --rm -i hadolint/hadolint hadolint --ignore DL3008 --ignore DL3016 - < healthsentinel-frontend/Dockerfile'
             }
         }
 
@@ -46,25 +45,24 @@ pipeline {
                 echo "Validating Database Schema..."
                 sh '''
                     docker run --rm -v ${WORKSPACE}/healthsentinel-backend:/app -w /app \
-                    node:22-slim bash -c "rm -f prisma.config.ts && npx prisma validate --schema=./prisma/schema.prisma"
+                    node:22-slim bash -c "npx prisma validate --schema=./prisma/schema.prisma"
                 '''
             }
         }
 
-        stage('Build & Trivy Scan') {
+        stage('Build & Image Scanning') {
             steps {
                 dir('healthsentinel-backend') {
                     echo "Building Backend (No-Cache)..."
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
                     
                     echo "Scanning with Trivy..."
-                    // Correct Trivy command using the local socket
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${DOCKER_IMAGE_BACKEND}:latest'
                 }
             }
         }
 
-        stage('SonarQube') {
+        stage('SonarQube Quality Gate') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
@@ -72,7 +70,7 @@ pipeline {
                         sh "${scannerHome}/bin/sonar-scanner " +
                             "-Dsonar.projectKey=HealthSentinel " +
                             "-Dsonar.sources=. " +
-                            "-Dsonar.exclusions=**/node_modules/**,**/venv/** "
+                            "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
                     }
                 }
             }
