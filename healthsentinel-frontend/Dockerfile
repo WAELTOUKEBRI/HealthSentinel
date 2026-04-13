@@ -25,7 +25,8 @@ ENV HOSTNAME="0.0.0.0"
 
 # --- SENIOR SECURITY: Non-Root User ---
 RUN addgroup --system --gid 1001 nodejs && \
-RUN adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 nextjs && \
+    apk update && apk upgrade --no-cache
 
 # Only copy what is strictly necessary
 COPY --from=builder /app/public ./public
