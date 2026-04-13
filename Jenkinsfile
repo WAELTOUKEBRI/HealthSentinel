@@ -25,7 +25,8 @@ pipeline {
                 }
                 stage('Bandit (Python)') {
                     steps {
-                        sh "docker run --rm -v ${WORKSPACE}/healthsentinel-backend:/app -w /app cytopia/bandit -r . --exclude ./venv -ll"
+                        // Using --volumes-from to ensure it sees the files on your Lenovo's Jenkins setup
+                        sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend cytopia/bandit -r . --exclude ./venv -ll"
                     }
                 }
             }
@@ -33,8 +34,7 @@ pipeline {
 
         stage('Infrastructure Linting') {
             steps {
-                echo "🚀 Linting Dockerfiles (Ignoring version-pinning warnings)..."
-                // Adding 'hadolint' command and ignore flags inside the container
+                echo "🚀 Linting Dockerfiles..."
                 sh 'docker run --rm -i hadolint/hadolint hadolint --ignore DL3008 --ignore DL3013 - < healthsentinel-backend/Dockerfile'
                 sh 'docker run --rm -i hadolint/hadolint hadolint --ignore DL3008 --ignore DL3016 - < healthsentinel-frontend/Dockerfile'
             }
@@ -43,10 +43,9 @@ pipeline {
         stage('Prisma Validation') {
             steps {
                 echo "Validating Database Schema..."
-                sh '''
-                    docker run --rm -v ${WORKSPACE}/healthsentinel-backend:/app -w /app \
-                    node:22-slim bash -c "npx prisma validate --schema=./prisma/schema.prisma"
-                '''
+                // 1. node:22 (full) includes OpenSSL, so no more libssl errors
+                // 2. --volumes-from hs-jenkins finds your files correctly
+                sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend node:22 npx prisma@6.4.1 validate --schema=./prisma/schema.prisma"
             }
         }
 
@@ -55,7 +54,7 @@ pipeline {
                 dir('healthsentinel-backend') {
                     echo "Building Backend (No-Cache)..."
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
-                    
+
                     echo "Scanning with Trivy..."
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${DOCKER_IMAGE_BACKEND}:latest'
                 }
@@ -68,9 +67,9 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
                     withSonarQubeEnv('SonarQube') {
                         sh "${scannerHome}/bin/sonar-scanner " +
-                            "-Dsonar.projectKey=HealthSentinel " +
-                            "-Dsonar.sources=. " +
-                            "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
+                           "-Dsonar.projectKey=HealthSentinel " +
+                           "-Dsonar.sources=. " +
+                           "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
                     }
                 }
             }
