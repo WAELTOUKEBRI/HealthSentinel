@@ -66,23 +66,26 @@ pipeline {
             }
         }
 
-        stage('SonarQube Quality Gate') {
+         stage('SonarQube Quality Gate') {
     steps {
         script {
             def scannerHome = tool 'SonarScanner'
-            withSonarQubeEnv('SonarQube') {
-                // We added -e for errors and -X for full trace
-                sh """
-                ${scannerHome}/bin/sonar-scanner -X \
-                 -Dsonar.projectKey=HealthSentinel \
-                 -Dsonar.sources=. \
-                 -Dsonar.host.url=http://172.24.43.223:9000 \
-                 -Dsonar.token=sqa_2805e31f91cc54a2c7c5bb7f8e9d0e961aef229b \
-                 -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
-                   """       
-                   }
+            
+            // This wrapper pulls the URL from Jenkins System settings
+            withSonarQubeEnv('SonarQube') { 
+                // This wrapper pulls the Secret from Jenkins Credentials
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                    ${scannerHome}/bin/sonar-scanner \
+                    -Dsonar.projectKey=HealthSentinel \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=${SONAR_HOST_URL} \
+                    -Dsonar.token=${SONAR_TOKEN} \
+                    -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
+                    """
+                }
+            }
         }
     }
+} 
 }
-        }
-      }
