@@ -61,7 +61,7 @@ pipeline {
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
 
                     echo "Scanning with Trivy..."
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${DOCKER_IMAGE_BACKEND}:latest'
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image ${DOCKER_IMAGE_BACKEND}:latest'
                 }
             }
         }
