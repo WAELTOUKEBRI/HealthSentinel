@@ -77,6 +77,8 @@ pipeline {
                    "-X " + // Add this for full debug details
                    "-Dsonar.projectKey=HealthSentinel " +
                    "-Dsonar.sources=. " +
+                   "-Dsonar.host.url=http://172.24.43.223:9000 " + // Hardcode it briefly to test
+                   "-Dsonar.login=${SONAR_AUTH_TOKEN} " +
                    "-Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**"
                 }
               }
