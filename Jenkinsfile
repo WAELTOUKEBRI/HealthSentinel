@@ -45,7 +45,7 @@ pipeline {
                 echo "Validating Database Schema..."
                 // 1. node:22 (full) includes OpenSSL, so no more libssl errors
                 // 2. --volumes-from hs-jenkins finds your files correctly
-                sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend node:22 npx prisma@6.4.1 validate --schema=./prisma/schema.prisma"
+                sh "docker run --rm --volumes-from hs-jenkins -w ${WORKSPACE}/healthsentinel-backend -e PRISMA_SKIP_CONFIG=true node:22 npx prisma@6.4.1 validate --schema=./prisma/schema.prisma"
             }
         }
 
