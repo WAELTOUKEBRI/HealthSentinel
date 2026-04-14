@@ -39,7 +39,6 @@ COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 RUN rm -rf ./node_modules && rm -rf ./.next/standalone/node_modules
-COPY .trivyignore .
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
