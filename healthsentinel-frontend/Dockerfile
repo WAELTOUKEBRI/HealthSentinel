@@ -12,9 +12,9 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --frozen-lockfile
 COPY . .
-RUN rm -rf .next
+RUN rm -rf .next out build
 RUN npm run build
 
 # 2. Run Stage
