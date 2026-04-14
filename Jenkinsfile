@@ -65,6 +65,11 @@ pipeline {
                 // 2. FRONTEND Build & Scan
                 echo "Building Frontend..."
                 sh 'docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ./healthsentinel-frontend'
+
+                // DEBUG: Let's see what the container ACTUALLY contains
+                echo "🕵️ Checking internal container versions..."
+                sh 'docker run --rm ${DOCKER_IMAGE_FRONTEND}:latest grep -E "cross-spawn|tar" package-lock.json || echo "No lockfile in root"'
+
                 echo "🚀 Senior Scan: Frontend..."
                 sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH,CRITICAL --ignore-unfixed ${DOCKER_IMAGE_FRONTEND}:latest'
             }
