@@ -57,30 +57,31 @@ pipeline {
                 dir('healthsentinel-backend') {
                     echo "Building Backend..."
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
-                    echo "🚀 Senior Scan: Backend..."
+                    
+                    echo "🚀 Senior Scan: Backend (Critical Check)..."
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --exit-code 1 --severity CRITICAL --ignore-unfixed ${DOCKER_IMAGE_BACKEND}:latest'
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH --ignore-unfixed --pkg-relationships --format table ${DOCKER_IMAGE_BACKEND}:latest'
+                    
+                    echo "🚀 Senior Scan: Backend (High Table)..."
+                    // FIXED: Changed --pkg-relationships to --dependency-tree
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH --ignore-unfixed --dependency-tree --format table ${DOCKER_IMAGE_BACKEND}:latest'
                 }
 
                 // 2. FRONTEND Build & Scan
-
                 dir('healthsentinel-frontend') {
-                echo "🗑️ Killing old image to prevent Trivy confusion..."
-            // Remove the old image so the name is 'empty'
-                sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
+                    echo "🗑️ Killing old image to prevent Trivy confusion..."
+                    sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
 
-                echo "🚀 Building fresh image..."
-            // --pull forces Docker to check for updated base images
-                sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
+                    echo "🚀 Building fresh image..."
+                    sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
-                echo "🧐 Verifying the lockfile inside the NEW image..."
-            // This will print the actual version to the Jenkins console
-                sh "docker run --rm ${DOCKER_IMAGE_FRONTEND}:latest grep -A 1 \"cross-spawn\" package-lock.json || echo 'Lockfile not found'"
+                    echo "🧐 Verifying the lockfile inside the NEW image..."
+                    sh "docker run --rm ${DOCKER_IMAGE_FRONTEND}:latest grep -A 1 \"cross-spawn\" package-lock.json || echo 'Lockfile not found'"
 
-                echo "🛡️ Running Scan..."
-                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH,CRITICAL --ignore-unfixed ${DOCKER_IMAGE_FRONTEND}:latest"
+                    echo "🛡️ Running Scan..."
+                    // Added --dependency-tree here too so you can see why vulnerabilities exist
+                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH,CRITICAL --ignore-unfixed --dependency-tree --format table ${DOCKER_IMAGE_FRONTEND}:latest"
+                }
             }
-        }
         }
 
         stage('SonarQube Quality Gate') {
