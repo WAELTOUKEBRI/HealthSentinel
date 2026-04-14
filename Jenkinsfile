@@ -79,8 +79,7 @@ pipeline {
 
                     echo "🛡️ Running Scan..."
                     // Added --dependency-tree here too so you can see why vulnerabilities exist
-                    sh
-                    """
+                    sh """
                     docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     -v ${WORKSPACE}/healthsentinel-frontend/.trivyignore:/.trivyignore \
