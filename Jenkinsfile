@@ -86,7 +86,8 @@ pipeline {
                         --severity HIGH,CRITICAL \
                         --ignore-unfixed \
                         --format table \
-                        --ignorefile /dev/stdin <<EOF
+                        --ignorefile /dev/stdin
+                        healthsentinel-frontend:latest <<EOF
                          CVE-2024-21538
                          CVE-2025-64756
                          CVE-2026-26996
@@ -99,7 +100,6 @@ pipeline {
                          CVE-2026-29786
                          CVE-2026-31802
                     EOF
-                         healthsentinel-frontend:latest
                     '''
                 }
             }
