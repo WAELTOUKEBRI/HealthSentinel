@@ -1,5 +1,7 @@
 # 1. Build Stage
 FROM node:20-alpine AS builder
+USER root
+RUN apk update && apk upgrade --no-cache
 # Satisfy Hadolint by combining and clearing cache
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -10,7 +12,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 RUN rm -rf .next
 RUN npm run build
