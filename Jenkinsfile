@@ -80,16 +80,17 @@ pipeline {
                     echo "🛡️ Running Scan..."
                     // Added --dependency-tree here too so you can see why vulnerabilities exist
                     sh """
-                    docker run --rm \
-                   -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:0.50.1 image \
-                   --severity HIGH,CRITICAL \
-                   --ignore-unfixed \
-                   --format table \
-                   --ignorefile /dev/stdin <<EOF
-                   $(cat healthsentinel-frontend/.trivyignore)
+                       docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                       aquasec/trivy:0.50.1 image \
+                      --severity HIGH,CRITICAL \
+                      --ignore-unfixed \
+                      --format table \
+                      --ignorefile /dev/stdin <<EOF
+                    $(cat healthsentinel-frontend/.trivyignore)
                     EOF
-                   ${DOCKER_IMAGE_FRONTEND}:latest
+
+                        ${DOCKER_IMAGE_FRONTEND}:latest
                     """
                 }
             }
