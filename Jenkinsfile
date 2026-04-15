@@ -6,7 +6,6 @@ pipeline {
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
         REGION = "eu-west-3"
 
-        // 🔥 Trivy cache optimization (important for speed + consistency)
         TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
@@ -51,11 +50,11 @@ pipeline {
                 sh '''
                 docker run --rm -i hadolint/hadolint \
                 hadolint --ignore DL3008 --ignore DL3013 \
-                - < healthsentinel-backend/Dockerfile || true
+                - < healthsentinel-backend/Dockerfile
 
                 docker run --rm -i hadolint/hadolint \
                 hadolint --ignore DL3008 --ignore DL3016 \
-                - < healthsentinel-frontend/Dockerfile || true
+                - < healthsentinel-frontend/Dockerfile
                 '''
             }
         }
@@ -78,7 +77,6 @@ pipeline {
         stage('Build & Scan') {
             parallel {
 
-                // ================= BACKEND =================
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
@@ -86,7 +84,6 @@ pipeline {
                             sh "docker rmi -f ${DOCKER_IMAGE_BACKEND}:latest || true"
                             sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
-                            // 📦 SBOM
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -97,7 +94,6 @@ pipeline {
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
-                            // 🚨 CRITICAL GATE (strict)
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -110,7 +106,6 @@ pipeline {
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
-                            // 📊 HIGH REPORT
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -126,7 +121,6 @@ pipeline {
                     }
                 }
 
-                // ================= FRONTEND =================
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
@@ -134,7 +128,6 @@ pipeline {
                             sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
                             sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
-                            // 📦 SBOM
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -145,7 +138,6 @@ pipeline {
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
-                            // 🚨 CRITICAL GATE
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -158,7 +150,6 @@ pipeline {
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
-                            // 📊 HIGH REPORT
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -188,7 +179,7 @@ pipeline {
                             -Dsonar.sources=. \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/.next/**,**/dist/**,**/build/**,**/coverage/**,terraform/**
                             """
                         }
                     }
