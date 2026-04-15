@@ -6,6 +6,7 @@ pipeline {
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
         REGION = "eu-west-3"
         TRIVY_CACHE = "/home/jenkins/trivy-cache"
+        SBOM_DIR = "${WORKSPACE}/sbom"
     }
 
     stages {
@@ -19,6 +20,7 @@ pipeline {
 
         stage('Security Analysis') {
             parallel {
+
                 stage('Gitleaks') {
                     steps {
                         sh '''
@@ -83,17 +85,17 @@ pipeline {
                             sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
                             sh '''
+                            mkdir -p ${SBOM_DIR}
+
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v ${WORKSPACE}/healthsentinel-backend:/out \
+                              -v ${SBOM_DIR}:/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
                               -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
                             '''
-
-                            archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
@@ -130,17 +132,17 @@ pipeline {
                             sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
                             sh '''
+                            mkdir -p ${SBOM_DIR}
+
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v ${WORKSPACE}/healthsentinel-frontend:/out \
+                              -v ${SBOM_DIR}:/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
                               -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
-
-                            archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
@@ -178,6 +180,7 @@ pipeline {
 
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+
                             sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
