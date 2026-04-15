@@ -107,7 +107,7 @@ pipeline {
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
-                            archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
 
                             /* ===== CRITICAL GATE ===== */
                             sh '''
@@ -150,7 +150,7 @@ pipeline {
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
-                            archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
 
                             /* ===== CRITICAL GATE ===== */
                             sh '''
