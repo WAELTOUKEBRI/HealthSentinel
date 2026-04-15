@@ -13,10 +13,7 @@ ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
 # install deps (production only)
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
-# 🔥 important cleanup step (reduces CVE graph noise)
-RUN npm prune --omit=dev
+RUN npm ci 
 
 COPY . .
 
