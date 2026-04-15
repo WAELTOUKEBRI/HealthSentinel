@@ -48,13 +48,15 @@ pipeline {
         stage('Docker Lint') {
             steps {
                 sh '''
-                docker run --rm -i hadolint/hadolint \
-                hadolint --ignore DL3008 --ignore DL3013 \
-                - < healthsentinel-backend/Dockerfile
+                docker run --rm \
+                  -v $WORKSPACE:/work \
+                  hadolint/hadolint \
+                  hadolint --ignore DL3008 --ignore DL3013 /work/healthsentinel-backend/Dockerfile
 
-                docker run --rm -i hadolint/hadolint \
-                hadolint --ignore DL3008 --ignore DL3016 \
-                - < healthsentinel-frontend/Dockerfile
+                docker run --rm \
+                  -v $WORKSPACE:/work \
+                  hadolint/hadolint \
+                  hadolint --ignore DL3008 --ignore DL3016 /work/healthsentinel-frontend/Dockerfile
                 '''
             }
         }
@@ -66,9 +68,9 @@ pipeline {
                     docker build --target builder -t backend-linter .
 
                     docker run --rm \
-                    -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
-                    backend-linter \
-                    npx prisma validate --schema=./prisma/schema.prisma
+                      -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
+                      backend-linter \
+                      sh -c "npx prisma validate --schema=./prisma/schema.prisma"
                     '''
                 }
             }
