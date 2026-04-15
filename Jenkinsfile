@@ -19,27 +19,31 @@ pipeline {
         }
 
         stage('Security Analysis') {
-            parallel {
+            stages {
+                stage('Parallel Security Checks') {
+                    parallel {
 
-                stage('Gitleaks') {
-                    steps {
-                        sh '''
-                        docker run --rm \
-                        -v ${WORKSPACE}:/repo \
-                        zricethezav/gitleaks:latest detect \
-                        --source /repo --no-git
-                        '''
-                    }
-                }
+                        stage('Gitleaks') {
+                            steps {
+                                sh '''
+                                docker run --rm \
+                                -v ${WORKSPACE}:/repo \
+                                zricethezav/gitleaks:latest detect \
+                                --source /repo --no-git
+                                '''
+                            }
+                        }
 
-                stage('Bandit') {
-                    steps {
-                        sh '''
-                        docker run --rm \
-                        -v ${WORKSPACE}:/repo \
-                        -w /repo/healthsentinel-backend \
-                        cytopia/bandit -r . --exclude ./venv -ll
-                        '''
+                        stage('Bandit') {
+                            steps {
+                                sh '''
+                                docker run --rm \
+                                -v ${WORKSPACE}:/repo \
+                                -w /repo/healthsentinel-backend \
+                                cytopia/bandit -r . --exclude ./venv -ll
+                                '''
+                            }
+                        }
                     }
                 }
             }
@@ -51,20 +55,22 @@ pipeline {
                 echo "🔎 Running Hadolint safely..."
 
                 docker run --rm \
-                -v ${WORKSPACE}:/repo \
+                -v ${WORKSPACE}:/workspace \
+                -w /workspace \
                 hadolint/hadolint:latest \
                 hadolint \
                 --ignore DL3008 \
                 --ignore DL3013 \
-                /repo/healthsentinel-backend/Dockerfile
+                healthsentinel-backend/Dockerfile
 
                 docker run --rm \
-                -v ${WORKSPACE}:/repo \
+                -v ${WORKSPACE}:/workspace \
+                -w /workspace \
                 hadolint/hadolint:latest \
                 hadolint \
                 --ignore DL3008 \
                 --ignore DL3016 \
-                /repo/healthsentinel-frontend/Dockerfile
+                healthsentinel-frontend/Dockerfile
                 '''
             }
         }
@@ -177,7 +183,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube') {
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
@@ -195,6 +201,14 @@ pipeline {
                             """
                         }
                     }
+                }
+            }
+        }
+
+        stage('SonarQube Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
