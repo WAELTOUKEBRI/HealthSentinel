@@ -16,6 +16,9 @@ pipeline {
             }
         }
 
+        /* =========================
+           SECURITY ANALYSIS
+        ========================= */
         stage('Security Analysis') {
             parallel {
 
@@ -43,7 +46,10 @@ pipeline {
             }
         }
 
-        stage('Docker Lint (NON-BLOCKING)') {
+        /* =========================
+           DOCKER LINT (NON-BLOCKING)
+        ========================= */
+        stage('Docker Lint') {
             steps {
                 sh '''
                 echo "Hadolint backend"
@@ -59,7 +65,10 @@ pipeline {
             }
         }
 
-        stage('Prisma Validation (BLOCKING)') {
+        /* =========================
+           PRISMA VALIDATION
+        ========================= */
+        stage('Prisma Validation') {
             steps {
                 dir('healthsentinel-backend') {
                     sh '''
@@ -74,15 +83,34 @@ pipeline {
             }
         }
 
+        /* =========================
+           BUILD + SECURITY SCAN
+        ========================= */
         stage('Build & Scan') {
             parallel {
 
+                /* -------- BACKEND -------- */
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
+                            /* ===== SBOM (ARTIFACT ONLY) ===== */
+                            sh '''
+                            docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                            aquasec/trivy:0.50.1 image \
+                            --format cyclonedx \
+                            -o sbom-backend.json \
+                            ${DOCKER_IMAGE_BACKEND}:latest
+                            '''
+
+                            /* Archive SBOM */
+                            archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
+
+                            /* ===== CRITICAL GATE ===== */
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -91,16 +119,41 @@ pipeline {
                             --exit-code 1 \
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
+
+                            /* ===== HIGH REPORT ===== */
+                            sh '''
+                            docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            aquasec/trivy:0.50.1 image \
+                            --severity HIGH \
+                            --format table \
+                            ${DOCKER_IMAGE_BACKEND}:latest
+                            '''
                         }
                     }
                 }
 
+                /* -------- FRONTEND -------- */
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
+                            /* ===== SBOM (ARTIFACT ONLY) ===== */
+                            sh '''
+                            docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                            aquasec/trivy:0.50.1 image \
+                            --format cyclonedx \
+                            -o sbom-frontend.json \
+                            ${DOCKER_IMAGE_FRONTEND}:latest
+                            '''
+
+                            archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
+
+                            /* ===== CRITICAL GATE ===== */
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -109,18 +162,33 @@ pipeline {
                             --exit-code 1 \
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
+
+                            /* ===== HIGH REPORT ===== */
+                            sh '''
+                            docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            aquasec/trivy:0.50.1 image \
+                            --severity HIGH \
+                            --format table \
+                            ${DOCKER_IMAGE_FRONTEND}:latest
+                            '''
                         }
                     }
                 }
             }
         }
 
-        stage('SonarQube (QUALITY GATE)') {
+        /* =========================
+           SONARQUBE QUALITY GATE
+        ========================= */
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
+
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+
                             sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
@@ -133,12 +201,23 @@ pipeline {
                 }
             }
         }
+
+        stage('SonarQube Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
     }
 
+    /* =========================
+       CLEANUP
+    ========================= */
     post {
         always {
             sh '''
-            echo "Cleanup"
+            echo "🧹 Cleanup Docker environment"
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
