@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
-        REGION = "eu-west-3"
         TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
@@ -19,7 +18,6 @@ pipeline {
 
         stage('Security Analysis') {
             parallel {
-
                 stage('Gitleaks') {
                     steps {
                         sh '''
@@ -52,18 +50,12 @@ pipeline {
                 docker run --rm \
                 -v ${WORKSPACE}:/repo \
                 hadolint/hadolint \
-                hadolint \
-                --ignore DL3008 \
-                --ignore DL3013 \
-                /repo/healthsentinel-backend/Dockerfile
+                hadolint --ignore DL3008 --ignore DL3013 /repo/healthsentinel-backend/Dockerfile
 
                 docker run --rm \
                 -v ${WORKSPACE}:/repo \
                 hadolint/hadolint \
-                hadolint \
-                --ignore DL3008 \
-                --ignore DL3016 \
-                /repo/healthsentinel-frontend/Dockerfile
+                hadolint --ignore DL3008 --ignore DL3016 /repo/healthsentinel-frontend/Dockerfile
                 '''
             }
         }
@@ -100,7 +92,7 @@ pipeline {
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
                             -o sbom-backend.json \
-                            healthsentinel-backend:latest
+                            ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
                             sh '''
@@ -112,7 +104,7 @@ pipeline {
                             --exit-code 1 \
                             --ignore-unfixed \
                             --ignorefile .trivyignore \
-                            healthsentinel-backend:latest
+                            ${DOCKER_IMAGE_BACKEND}:latest
                             '''
                         }
                     }
@@ -132,7 +124,7 @@ pipeline {
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
                             -o sbom-frontend.json \
-                            healthsentinel-frontend:latest
+                            ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
                             sh '''
@@ -144,7 +136,7 @@ pipeline {
                             --exit-code 1 \
                             --ignore-unfixed \
                             --ignorefile .trivyignore \
-                            healthsentinel-frontend:latest
+                            ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
                         }
                     }
@@ -159,7 +151,6 @@ pipeline {
 
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-
                             sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \

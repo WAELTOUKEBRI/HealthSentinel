@@ -10,20 +10,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js only for Prisma
+# Node.js for Prisma only
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Prisma setup
 COPY prisma ./prisma/
 COPY package*.json ./
 
-RUN npm install prisma@6.4.1 @prisma/client@6.4.1 --no-save \
+RUN npm install --no-save prisma@6.4.1 @prisma/client@6.4.1 \
     && DATABASE_URL="postgresql://placeholder" npx prisma generate
 
 
@@ -37,19 +35,17 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 ca-certificates \
+    && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -r app && useradd -r -g app -m app
 
-# Python deps
-COPY --from=builder /root/.local /home/app/.local
-
-# Prisma runtime artifacts
+COPY --from=builder --chown=app:app /root/.local /home/app/.local
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-COPY prisma ./prisma
-COPY . .
+COPY --chown=app:app prisma ./prisma
+COPY --chown=app:app . .
 
 USER app
 
