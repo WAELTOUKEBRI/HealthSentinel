@@ -19,7 +19,6 @@ pipeline {
 
         stage('Security Analysis') {
             parallel {
-
                 stage('Gitleaks') {
                     steps {
                         sh '''
@@ -87,12 +86,14 @@ pipeline {
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v ${WORKSPACE}/healthsentinel-backend:/project \
+                              -v ${WORKSPACE}/healthsentinel-backend:/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
-                              -o /project/sbom-backend.json \
+                              -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
                             '''
+
+                            archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
@@ -117,8 +118,6 @@ pipeline {
                               --format table \
                               ${DOCKER_IMAGE_BACKEND}:latest
                             '''
-
-                            archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
                         }
                     }
                 }
@@ -134,12 +133,14 @@ pipeline {
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v ${WORKSPACE}/healthsentinel-frontend:/project \
+                              -v ${WORKSPACE}/healthsentinel-frontend:/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
-                              -o /project/sbom-frontend.json \
+                              -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
+
+                            archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
@@ -164,8 +165,6 @@ pipeline {
                               --format table \
                               ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
-
-                            archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
                         }
                     }
                 }
