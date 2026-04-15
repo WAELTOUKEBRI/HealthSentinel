@@ -81,38 +81,38 @@ pipeline {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
-                            /* ===== FIXED SBOM PATH ===== */
                             sh '''
+                            echo "📦 Generating SBOM (Backend)"
+
                             docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v $(pwd):/out \
-                            aquasec/trivy:0.50.1 image \
-                            --scanners vuln \
-                            --format cyclonedx \
-                            --output /out/sbom-backend.json \
-                            ${DOCKER_IMAGE_BACKEND}:latest
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              -v ${WORKSPACE}/healthsentinel-backend:/out \
+                              aquasec/trivy:0.50.1 image \
+                              --format cyclonedx \
+                              --output /out/sbom-backend.json \
+                              ${DOCKER_IMAGE_BACKEND}:latest
+
+                            ls -lah /var/jenkins_home/workspace/HealthSentinel-Production/healthsentinel-backend || true
                             '''
 
-                            sh 'test -f sbom-backend.json'
-
-                            archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy:0.50.1 image \
-                            --severity CRITICAL \
-                            --exit-code 1 \
-                            ${DOCKER_IMAGE_BACKEND}:latest
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              aquasec/trivy:0.50.1 image \
+                              --severity CRITICAL \
+                              --exit-code 1 \
+                              ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
                             sh '''
                             docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy:0.50.1 image \
-                            --severity HIGH \
-                            --format table \
-                            ${DOCKER_IMAGE_BACKEND}:latest
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              aquasec/trivy:0.50.1 image \
+                              --severity HIGH \
+                              --format table \
+                              ${DOCKER_IMAGE_BACKEND}:latest
                             '''
                         }
                     }
@@ -124,38 +124,38 @@ pipeline {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
-                            /* ===== FIXED SBOM PATH ===== */
                             sh '''
+                            echo "📦 Generating SBOM (Frontend)"
+
                             docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v $(pwd):/out \
-                            aquasec/trivy:0.50.1 image \
-                            --scanners vuln \
-                            --format cyclonedx \
-                            --output /out/sbom-frontend.json \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              -v ${WORKSPACE}/healthsentinel-frontend:/out \
+                              aquasec/trivy:0.50.1 image \
+                              --format cyclonedx \
+                              --output /out/sbom-frontend.json \
+                              ${DOCKER_IMAGE_FRONTEND}:latest
+
+                            ls -lah /var/jenkins_home/workspace/HealthSentinel-Production/healthsentinel-frontend || true
                             '''
 
-                            sh 'test -f sbom-frontend.json'
-
-                            archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy:0.50.1 image \
-                            --severity CRITICAL \
-                            --exit-code 1 \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              aquasec/trivy:0.50.1 image \
+                              --severity CRITICAL \
+                              --exit-code 1 \
+                              ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
                             sh '''
                             docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy:0.50.1 image \
-                            --severity HIGH \
-                            --format table \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              aquasec/trivy:0.50.1 image \
+                              --severity HIGH \
+                              --format table \
+                              ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
                         }
                     }
@@ -196,6 +196,7 @@ pipeline {
     post {
         always {
             sh '''
+            echo "🧹 Cleanup Docker environment"
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
