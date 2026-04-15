@@ -6,20 +6,21 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# minimal system dependencies (build-time only)
+# minimal build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 # Node.js ONLY for Prisma generation
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
-# Python dependencies (user install for isolation)
+# Python deps (isolated install)
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Prisma setup (build-time only)
+# Prisma generation (build-time only)
 COPY prisma ./prisma/
 COPY package*.json ./
 
@@ -35,22 +36,23 @@ ENV PATH="/home/app/.local/bin:$PATH"
 
 WORKDIR /app
 
-# runtime-only dependencies (minimal attack surface)
+# runtime deps ONLY (tightened)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 ca-certificates \
+    && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 # non-root user
 RUN groupadd -r app && useradd -r -g app -m app
 
-# Python dependencies from builder
+# Python runtime dependencies
 COPY --from=builder --chown=app:app /root/.local /home/app/.local
 
-# Prisma runtime artifacts ONLY (no CLI, no tooling)
+# Prisma runtime ONLY (no CLI)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# application + schema
+# application
 COPY --chown=app:app prisma ./prisma
 COPY --chown=app:app . .
 
@@ -58,7 +60,7 @@ USER app
 
 EXPOSE 8000
 
-# lightweight healthcheck (no external binaries)
+# lightweight internal healthcheck (no curl dependency)
 HEALTHCHECK CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

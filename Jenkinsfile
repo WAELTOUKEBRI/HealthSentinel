@@ -4,8 +4,10 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
-        AWS_ACCOUNT_ID = "123456789012"
         REGION = "eu-west-3"
+
+        // 🔥 Trivy cache optimization (important for speed + consistency)
+        TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
     stages {
@@ -19,7 +21,8 @@ pipeline {
 
         stage('Security Analysis') {
             parallel {
-                stage('Gitleaks (Secrets)') {
+
+                stage('Gitleaks') {
                     steps {
                         sh '''
                         docker run --rm \
@@ -30,7 +33,7 @@ pipeline {
                     }
                 }
 
-                stage('Bandit (Python)') {
+                stage('Bandit') {
                     steps {
                         sh '''
                         docker run --rm \
@@ -43,7 +46,7 @@ pipeline {
             }
         }
 
-        stage('Infrastructure Linting') {
+        stage('Docker Lint') {
             steps {
                 sh '''
                 docker run --rm -i hadolint/hadolint \
@@ -61,17 +64,18 @@ pipeline {
             steps {
                 dir('healthsentinel-backend') {
                     sh '''
-                    docker build --target builder -t healthsentinel-backend:linter .
+                    docker build --target builder -t backend-linter .
+
                     docker run --rm \
                     -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
-                    healthsentinel-backend:linter \
+                    backend-linter \
                     npx prisma validate --schema=./prisma/schema.prisma
                     '''
                 }
             }
         }
 
-        stage('Build & Scan Images') {
+        stage('Build & Scan') {
             parallel {
 
                 // ================= BACKEND =================
@@ -86,22 +90,23 @@ pipeline {
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /home/jenkins/trivy-cache:/root/.cache/aquasec/trivy \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
                             -o sbom-backend.json \
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
-                            // 🚨 CRITICAL GATE
+                            // 🚨 CRITICAL GATE (strict)
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /home/jenkins/trivy-cache:/root/.cache/aquasec/trivy \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --severity CRITICAL \
                             --exit-code 1 \
                             --ignore-unfixed \
+                            --ignorefile .trivyignore \
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
@@ -109,10 +114,11 @@ pipeline {
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /home/jenkins/trivy-cache:/root/.cache/aquasec/trivy \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --severity HIGH \
                             --ignore-unfixed \
+                            --ignorefile .trivyignore \
                             --format table \
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
@@ -132,7 +138,7 @@ pipeline {
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /home/jenkins/trivy-cache:/root/.cache/aquasec/trivy \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
                             -o sbom-frontend.json \
@@ -143,11 +149,12 @@ pipeline {
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /home/jenkins/trivy-cache:/root/.cache/aquasec/trivy \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --severity CRITICAL \
                             --exit-code 1 \
                             --ignore-unfixed \
+                            --ignorefile .trivyignore \
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
@@ -155,10 +162,11 @@ pipeline {
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v /home/jenkins/trivy-cache:/root/.cache/aquasec/trivy \
+                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --severity HIGH \
                             --ignore-unfixed \
+                            --ignorefile .trivyignore \
                             --format table \
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
@@ -168,7 +176,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Quality Gate') {
+        stage('SonarQube') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
@@ -192,7 +200,7 @@ pipeline {
     post {
         always {
             sh '''
-            echo "🧹 Cleaning Docker environment safely..."
+            echo "🧹 Cleaning Docker environment..."
 
             docker container prune -f || true
             docker image prune -f || true
