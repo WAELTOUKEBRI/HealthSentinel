@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
-        TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
     stages {
@@ -64,9 +63,9 @@ pipeline {
                     docker build --target builder -t backend-linter .
 
                     docker run --rm \
-                    -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
-                    backend-linter \
-                    npx prisma validate --schema=./prisma/schema.prisma
+                      -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
+                      backend-linter \
+                      npx prisma validate --schema=./prisma/schema.prisma
                     '''
                 }
             }
@@ -75,6 +74,7 @@ pipeline {
         stage('Build & Scan') {
             parallel {
 
+                /* ================= BACKEND ================= */
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
@@ -82,7 +82,7 @@ pipeline {
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
                             sh '''
-                            echo "📦 Generating SBOM (Backend)"
+                            echo "📦 Generating SBOM Backend"
 
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
@@ -92,10 +92,10 @@ pipeline {
                               --output /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
 
-                            ls -lah /var/jenkins_home/workspace/HealthSentinel-Production/healthsentinel-backend || true
+                            ls -lah
                             '''
 
-                            archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
@@ -118,6 +118,7 @@ pipeline {
                     }
                 }
 
+                /* ================= FRONTEND ================= */
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
@@ -125,7 +126,7 @@ pipeline {
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
                             sh '''
-                            echo "📦 Generating SBOM (Frontend)"
+                            echo "📦 Generating SBOM Frontend"
 
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
@@ -135,10 +136,10 @@ pipeline {
                               --output /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
 
-                            ls -lah /var/jenkins_home/workspace/HealthSentinel-Production/healthsentinel-frontend || true
+                            ls -lah
                             '''
 
-                            archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
 
                             sh '''
                             docker run --rm \
