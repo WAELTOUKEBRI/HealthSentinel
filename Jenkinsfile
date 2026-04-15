@@ -59,11 +59,11 @@ pipeline {
                     sh 'docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest .'
                     
                     echo "🚀 Senior Scan: Backend (Critical Check)..."
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --exit-code 1 --severity CRITICAL --ignore-unfixed ${DOCKER_IMAGE_BACKEND}:latest'
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --exit-code 1 --severity CRITICAL --ignore-unfixed --timeout 15m ${DOCKER_IMAGE_BACKEND}:latest'
                     
                     echo "🚀 Senior Scan: Backend (High Table)..."
                     // FIXED: Changed --pkg-relationships to --dependency-tree
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH --ignore-unfixed --dependency-tree --format table ${DOCKER_IMAGE_BACKEND}:latest'
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.50.1 image --severity HIGH --ignore-unfixed --dependency-tree --format table --timeout 15m ${DOCKER_IMAGE_BACKEND}:latest'
                 }
 
                 // 2. FRONTEND Build & Scan
@@ -86,6 +86,7 @@ pipeline {
                         --severity HIGH,CRITICAL \
                         --ignore-unfixed \
                         --format table \
+                        --timeout 15m \
                         --ignorefile /dev/stdin
                         healthsentinel-frontend:latest <<EOF
                          CVE-2024-21538
