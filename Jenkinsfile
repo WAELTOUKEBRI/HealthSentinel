@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Initial Cleanup') {
             steps {
-                cleanWs()
+                sh 'rm -rf * .git' // Wipe EVERYTHING manually
                 checkout scm
             }
         }
@@ -68,42 +68,27 @@ pipeline {
 
                 // 2. FRONTEND Build & Scan
                 dir('healthsentinel-frontend') {
-                    echo "🗑️ Killing old image to prevent Trivy confusion..."
+                    echo "🗑️ Killing old image..."
                     sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
 
                     echo "🚀 Building fresh image..."
+                    sh "grep 'cross-spawn' package-lock.json -A 5" // This will print the version to the console
+                    sh "rm -rf node_modules" // Kill the ghost files
+                // We use --no-cache to ensure we aren't pulling old broken layers
                     sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
-                    echo "🧐 Verifying the lockfile inside the NEW image..."
-                    sh "docker run --rm ${DOCKER_IMAGE_FRONTEND}:latest grep -A 1 \"cross-spawn\" package-lock.json || echo 'Lockfile not found'"
-
-                    echo "🛡️ Running Scan..."
-                    // Added --dependency-tree here too so you can see why vulnerabilities exist
-                    sh '''
-                       docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                         aquasec/trivy:0.50.1 image healthsentinel-frontend:latest \
-                        --severity HIGH,CRITICAL \
-                        --ignore-unfixed \
-                        --format table \
-                        --timeout 15m \
-                        --ignorefile /dev/stdin <<EOF
-                    CVE-2024-21538
-                    CVE-2025-64756
-                    CVE-2026-26996
-                    CVE-2026-27903
-                    CVE-2026-27904
-                    CVE-2026-23745
-                    CVE-2026-24842
-                    CVE-2026-26960
-                    CVE-2026-29786
-                    CVE-2026-31802
-                    CVE-2026-23950
-                    EOF
-                    '''
-                }
+                    echo "🛡️ Running HONEST Scan (No ignores)..."
+                    sh """
+                    docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:0.50.1 image ${DOCKER_IMAGE_FRONTEND}:latest \
+                    --severity HIGH,CRITICAL \
+                    --format table \
+                    --timeout 15m
+                    """
+              }
             }
-        }
+          }
 
         stage('SonarQube Quality Gate') {
             steps {
