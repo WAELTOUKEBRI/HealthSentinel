@@ -5,7 +5,6 @@ pipeline {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
         REGION = "eu-west-3"
-
         TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
@@ -25,9 +24,9 @@ pipeline {
                     steps {
                         sh '''
                         docker run --rm \
-                        -v ${WORKSPACE}:/path \
+                        -v ${WORKSPACE}:/repo \
                         zricethezav/gitleaks:latest detect \
-                        --source /path --no-git
+                        --source /repo --no-git
                         '''
                     }
                 }
@@ -36,8 +35,8 @@ pipeline {
                     steps {
                         sh '''
                         docker run --rm \
-                        -v ${WORKSPACE}:/src \
-                        -w /src/healthsentinel-backend \
+                        -v ${WORKSPACE}:/repo \
+                        -w /repo/healthsentinel-backend \
                         cytopia/bandit -r . --exclude ./venv -ll
                         '''
                     }
@@ -48,24 +47,23 @@ pipeline {
         stage('Docker Lint') {
             steps {
                 sh '''
-                set -e
+                echo "🔎 Running Hadolint safely..."
 
-                echo "🔎 Detecting Dockerfiles..."
-                find . -maxdepth 4 -type f -name "Dockerfile"
-
-                echo "================ BACKEND LINT ================"
                 docker run --rm \
-                  -v ${WORKSPACE}:/workspace \
-                  -w /workspace/healthsentinel-backend \
-                  hadolint/hadolint \
-                  hadolint --ignore DL3008 --ignore DL3013 Dockerfile
+                -v ${WORKSPACE}:/repo \
+                hadolint/hadolint \
+                hadolint \
+                --ignore DL3008 \
+                --ignore DL3013 \
+                /repo/healthsentinel-backend/Dockerfile
 
-                echo "================ FRONTEND LINT ================"
                 docker run --rm \
-                  -v ${WORKSPACE}:/workspace \
-                  -w /workspace/healthsentinel-frontend \
-                  hadolint/hadolint \
-                  hadolint --ignore DL3008 --ignore DL3016 Dockerfile
+                -v ${WORKSPACE}:/repo \
+                hadolint/hadolint \
+                hadolint \
+                --ignore DL3008 \
+                --ignore DL3016 \
+                /repo/healthsentinel-frontend/Dockerfile
                 '''
             }
         }
@@ -102,7 +100,7 @@ pipeline {
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
                             -o sbom-backend.json \
-                            ${DOCKER_IMAGE_BACKEND}:latest
+                            healthsentinel-backend:latest
                             '''
 
                             sh '''
@@ -114,19 +112,7 @@ pipeline {
                             --exit-code 1 \
                             --ignore-unfixed \
                             --ignorefile .trivyignore \
-                            ${DOCKER_IMAGE_BACKEND}:latest
-                            '''
-
-                            sh '''
-                            docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                            aquasec/trivy:0.50.1 image \
-                            --severity HIGH \
-                            --ignore-unfixed \
-                            --ignorefile .trivyignore \
-                            --format table \
-                            ${DOCKER_IMAGE_BACKEND}:latest
+                            healthsentinel-backend:latest
                             '''
                         }
                     }
@@ -146,7 +132,7 @@ pipeline {
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
                             -o sbom-frontend.json \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
+                            healthsentinel-frontend:latest
                             '''
 
                             sh '''
@@ -158,19 +144,7 @@ pipeline {
                             --exit-code 1 \
                             --ignore-unfixed \
                             --ignorefile .trivyignore \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
-                            '''
-
-                            sh '''
-                            docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                            aquasec/trivy:0.50.1 image \
-                            --severity HIGH \
-                            --ignore-unfixed \
-                            --ignorefile .trivyignore \
-                            --format table \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
+                            healthsentinel-frontend:latest
                             '''
                         }
                     }
@@ -185,13 +159,14 @@ pipeline {
 
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+
                             sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/.next/**,**/dist/**,**/build/**,**/coverage/**,terraform/**
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/.next/**,**/dist/**,**/build/**,terraform/**
                             """
                         }
                     }
@@ -204,7 +179,6 @@ pipeline {
         always {
             sh '''
             echo "🧹 Cleaning Docker environment..."
-
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
