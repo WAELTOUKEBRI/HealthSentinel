@@ -96,15 +96,27 @@ pipeline {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
-                            /* ===== SBOM FIXED (PERSISTED PROPERLY) ===== */
+                            /* ===== SBOM ===== */
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v ${WORKSPACE}/healthsentinel-backend:/out \
                             aquasec/trivy:0.50.1 image \
+                            --scanners vuln \
                             --format cyclonedx \
-                            -o /out/sbom-backend.json \
+                            --output /out/sbom-backend.json \
                             ${DOCKER_IMAGE_BACKEND}:latest
+                            '''
+
+                            /* DEBUG + VALIDATION */
+                            sh '''
+                            echo "📂 Backend workspace content:"
+                            ls -lah
+
+                            if [ ! -f sbom-backend.json ]; then
+                                echo "❌ SBOM BACKEND NOT GENERATED"
+                                exit 1
+                            fi
                             '''
 
                             archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
@@ -139,15 +151,27 @@ pipeline {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
-                            /* ===== SBOM FIXED (PERSISTED PROPERLY) ===== */
+                            /* ===== SBOM ===== */
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v ${WORKSPACE}/healthsentinel-frontend:/out \
                             aquasec/trivy:0.50.1 image \
+                            --scanners vuln \
                             --format cyclonedx \
-                            -o /out/sbom-frontend.json \
+                            --output /out/sbom-frontend.json \
                             ${DOCKER_IMAGE_FRONTEND}:latest
+                            '''
+
+                            /* DEBUG + VALIDATION */
+                            sh '''
+                            echo "📂 Frontend workspace content:"
+                            ls -lah
+
+                            if [ ! -f sbom-frontend.json ]; then
+                                echo "❌ SBOM FRONTEND NOT GENERATED"
+                                exit 1
+                            fi
                             '''
 
                             archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
