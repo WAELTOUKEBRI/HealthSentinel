@@ -48,15 +48,24 @@ pipeline {
         stage('Docker Lint') {
             steps {
                 sh '''
-                docker run --rm \
-                  -v $WORKSPACE:/work \
-                  hadolint/hadolint \
-                  hadolint --ignore DL3008 --ignore DL3013 /work/healthsentinel-backend/Dockerfile
+                set -e
 
+                echo "🔎 Detecting Dockerfiles..."
+                find . -maxdepth 4 -type f -name "Dockerfile"
+
+                echo "================ BACKEND LINT ================"
                 docker run --rm \
-                  -v $WORKSPACE:/work \
+                  -v ${WORKSPACE}:/workspace \
+                  -w /workspace/healthsentinel-backend \
                   hadolint/hadolint \
-                  hadolint --ignore DL3008 --ignore DL3016 /work/healthsentinel-frontend/Dockerfile
+                  hadolint --ignore DL3008 --ignore DL3013 Dockerfile
+
+                echo "================ FRONTEND LINT ================"
+                docker run --rm \
+                  -v ${WORKSPACE}:/workspace \
+                  -w /workspace/healthsentinel-frontend \
+                  hadolint/hadolint \
+                  hadolint --ignore DL3008 --ignore DL3016 Dockerfile
                 '''
             }
         }
@@ -68,9 +77,9 @@ pipeline {
                     docker build --target builder -t backend-linter .
 
                     docker run --rm \
-                      -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
-                      backend-linter \
-                      sh -c "npx prisma validate --schema=./prisma/schema.prisma"
+                    -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
+                    backend-linter \
+                    npx prisma validate --schema=./prisma/schema.prisma
                     '''
                 }
             }
@@ -173,6 +182,7 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
+
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                             sh """
