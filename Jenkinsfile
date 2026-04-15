@@ -4,9 +4,6 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
-        REGION = "eu-west-3"
-
-        // 🔥 Trivy cache optimization (important for speed + consistency)
         TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
@@ -22,23 +19,23 @@ pipeline {
         stage('Security Analysis') {
             parallel {
 
-                stage('Gitleaks') {
+                stage('Gitleaks (BLOCKING)') {
                     steps {
                         sh '''
                         docker run --rm \
-                        -v ${WORKSPACE}:/path \
+                        -v ${WORKSPACE}:/repo \
                         zricethezav/gitleaks:latest detect \
-                        --source /path --no-git
+                        --source /repo --no-git
                         '''
                     }
                 }
 
-                stage('Bandit') {
+                stage('Bandit (BLOCKING)') {
                     steps {
                         sh '''
                         docker run --rm \
-                        -v ${WORKSPACE}:/src \
-                        -w /src/healthsentinel-backend \
+                        -v ${WORKSPACE}:/repo \
+                        -w /repo/healthsentinel-backend \
                         cytopia/bandit -r . --exclude ./venv -ll
                         '''
                     }
@@ -46,13 +43,15 @@ pipeline {
             }
         }
 
-        stage('Docker Lint') {
+        stage('Docker Lint (NON-BLOCKING)') {
             steps {
                 sh '''
+                echo "Hadolint backend"
                 docker run --rm -i hadolint/hadolint \
                 hadolint --ignore DL3008 --ignore DL3013 \
                 - < healthsentinel-backend/Dockerfile || true
 
+                echo "Hadolint frontend"
                 docker run --rm -i hadolint/hadolint \
                 hadolint --ignore DL3008 --ignore DL3016 \
                 - < healthsentinel-frontend/Dockerfile || true
@@ -60,7 +59,7 @@ pipeline {
             }
         }
 
-        stage('Prisma Validation') {
+        stage('Prisma Validation (BLOCKING)') {
             steps {
                 dir('healthsentinel-backend') {
                     sh '''
@@ -78,90 +77,36 @@ pipeline {
         stage('Build & Scan') {
             parallel {
 
-                // ================= BACKEND =================
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
 
-                            sh "docker rmi -f ${DOCKER_IMAGE_BACKEND}:latest || true"
-                            sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_BACKEND}:latest ."
+                            sh "docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                            aquasec/trivy:0.50.1 image \
-                            --format cyclonedx \
-                            -o sbom-backend.json \
-                            ${DOCKER_IMAGE_BACKEND}:latest
-                            '''
-
-                            sh '''
-                            docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --severity CRITICAL \
                             --exit-code 1 \
-                            --ignore-unfixed \
-                            --ignorefile .trivyignore \
-                            ${DOCKER_IMAGE_BACKEND}:latest
-                            '''
-
-                            sh '''
-                            docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                            aquasec/trivy:0.50.1 image \
-                            --severity HIGH \
-                            --ignore-unfixed \
-                            --ignorefile .trivyignore \
-                            --format table \
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
                         }
                     }
                 }
 
-                // ================= FRONTEND =================
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
 
-                            sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
-                            sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
+                            sh "docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                            aquasec/trivy:0.50.1 image \
-                            --format cyclonedx \
-                            -o sbom-frontend.json \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
-                            '''
-
-                            sh '''
-                            docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                             aquasec/trivy:0.50.1 image \
                             --severity CRITICAL \
                             --exit-code 1 \
-                            --ignore-unfixed \
-                            --ignorefile .trivyignore \
-                            ${DOCKER_IMAGE_FRONTEND}:latest
-                            '''
-
-                            sh '''
-                            docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                            aquasec/trivy:0.50.1 image \
-                            --severity HIGH \
-                            --ignore-unfixed \
-                            --ignorefile .trivyignore \
-                            --format table \
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
                         }
@@ -170,7 +115,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube') {
+        stage('SonarQube (QUALITY GATE)') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
@@ -181,8 +126,7 @@ pipeline {
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
+                            -Dsonar.token=${SONAR_TOKEN}
                             """
                         }
                     }
@@ -194,8 +138,7 @@ pipeline {
     post {
         always {
             sh '''
-            echo "🧹 Cleaning Docker environment..."
-
+            echo "Cleanup"
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
