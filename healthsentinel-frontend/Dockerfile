@@ -3,6 +3,7 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# install OS deps (Debian way)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -41,6 +42,8 @@ RUN addgroup --system nodejs && adduser --system nextjs --ingroup nodejs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+RUN rm -rf .next/cache
 
 USER nextjs
 

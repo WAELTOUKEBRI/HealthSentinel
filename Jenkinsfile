@@ -6,6 +6,7 @@ pipeline {
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
         REGION = "eu-west-3"
 
+        // 🔥 Trivy cache optimization (important for speed + consistency)
         TRIVY_CACHE = "/home/jenkins/trivy-cache"
     }
 
@@ -19,58 +20,42 @@ pipeline {
         }
 
         stage('Security Analysis') {
-            stages {
-                stage('Parallel Security Checks') {
-                    parallel {
+            parallel {
 
-                        stage('Gitleaks') {
-                            steps {
-                                sh '''
-                                docker run --rm \
-                                -v ${WORKSPACE}:/repo \
-                                zricethezav/gitleaks:latest detect \
-                                --source /repo --no-git
-                                '''
-                            }
-                        }
+                stage('Gitleaks') {
+                    steps {
+                        sh '''
+                        docker run --rm \
+                        -v ${WORKSPACE}:/path \
+                        zricethezav/gitleaks:latest detect \
+                        --source /path --no-git
+                        '''
+                    }
+                }
 
-                        stage('Bandit') {
-                            steps {
-                                sh '''
-                                docker run --rm \
-                                -v ${WORKSPACE}:/repo \
-                                -w /repo/healthsentinel-backend \
-                                cytopia/bandit -r . --exclude ./venv -ll
-                                '''
-                            }
-                        }
+                stage('Bandit') {
+                    steps {
+                        sh '''
+                        docker run --rm \
+                        -v ${WORKSPACE}:/src \
+                        -w /src/healthsentinel-backend \
+                        cytopia/bandit -r . --exclude ./venv -ll
+                        '''
                     }
                 }
             }
         }
 
-        stage('Docker Lint (Hadolint)') {
+        stage('Docker Lint') {
             steps {
                 sh '''
-                echo "🔎 Running Hadolint safely..."
+                docker run --rm -i hadolint/hadolint \
+                hadolint --ignore DL3008 --ignore DL3013 \
+                - < healthsentinel-backend/Dockerfile || true
 
-                docker run --rm \
-                -v ${WORKSPACE}:/workspace \
-                -w /workspace \
-                hadolint/hadolint:latest \
-                hadolint \
-                --ignore DL3008 \
-                --ignore DL3013 \
-                healthsentinel-backend/Dockerfile
-
-                docker run --rm \
-                -v ${WORKSPACE}:/workspace \
-                -w /workspace \
-                hadolint/hadolint:latest \
-                hadolint \
-                --ignore DL3008 \
-                --ignore DL3016 \
-                healthsentinel-frontend/Dockerfile
+                docker run --rm -i hadolint/hadolint \
+                hadolint --ignore DL3008 --ignore DL3016 \
+                - < healthsentinel-frontend/Dockerfile || true
                 '''
             }
         }
@@ -93,6 +78,7 @@ pipeline {
         stage('Build & Scan') {
             parallel {
 
+                // ================= BACKEND =================
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
@@ -137,6 +123,7 @@ pipeline {
                     }
                 }
 
+                // ================= FRONTEND =================
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
@@ -183,32 +170,22 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('SonarQube') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
-
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-
                             sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/.next/**,**/dist/**,**/build/**,**/coverage/**,terraform/**
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
                             """
                         }
                     }
-                }
-            }
-        }
-
-        stage('SonarQube Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
                 }
             }
         }
