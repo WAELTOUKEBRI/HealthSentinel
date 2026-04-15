@@ -1,19 +1,22 @@
 # ---------- BUILD STAGE ----------
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# minimal OS deps (keep it small)
-RUN apk add --no-cache libc6-compat
+# install OS deps (Debian way)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_WS_URL
+
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
-# install deps (production only)
 COPY package.json package-lock.json ./
-RUN npm ci 
+RUN test -f package-lock.json || (echo "LOCKFILE MISSING" && exit 1)
+RUN npm ci
 
 COPY . .
 
@@ -22,7 +25,7 @@ RUN npm run build
 
 
 # ---------- RUNTIME STAGE ----------
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
@@ -30,18 +33,16 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# create non-root user
-RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# runtime minimal dependency
-RUN apk add --no-cache libc6-compat
+RUN addgroup --system nodejs && adduser --system nextjs --ingroup nodejs
 
-# only what is needed for Next.js standalone
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# remove Next cache (scanner noise reduction)
 RUN rm -rf .next/cache
 
 USER nextjs
