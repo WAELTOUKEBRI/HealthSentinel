@@ -1,73 +1,64 @@
-# --- STAGE 1: The Builder ---
+# ---------- BUILDER ----------
 FROM python:3.12-slim-bookworm AS builder
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# 1. Install System dependencies + Node.js 22 (Needed only for Prisma generation)
+# minimal system dependencies (build-time only)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates gnupg \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip==24.0 \
-    && pip install --user --no-cache-dir -r requirements.txt
+# Node.js ONLY for Prisma generation
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs
 
-# 3. Prisma Generation
+# Python dependencies (user install for isolation)
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# Prisma setup (build-time only)
 COPY prisma ./prisma/
 COPY package*.json ./
-RUN npm install @prisma/client@6.4.1 prisma@6.4.1 dotenv@16.4.5 tsx@4.19.1 && \
-    DATABASE_URL="postgresql://placeholder:5432/db" npx prisma generate
 
-# --- STAGE 2: The Secure Runner ---
-# Using bookworm-slim for the best balance of stability and small footprint
+RUN npm install prisma@6.4.1 @prisma/client@6.4.1 dotenv tsx \
+    && DATABASE_URL="postgresql://placeholder" npx prisma generate
+
+
+# ---------- RUNTIME ----------
 FROM python:3.12-slim-bookworm AS runner
 
-ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-# Optimized PATH for your custom user
-ENV PATH="/home/nurse-wael/.local/bin:/app/node_modules/.bin:$PATH"
+ENV PATH="/home/app/.local/bin:$PATH"
 
 WORKDIR /app
 
-# 4. Install ONLY essential runtime libs (libpq for Postgres)
-# We remove the package manager cache immediately to reduce Trivy noise
+# runtime-only dependencies (minimal attack surface)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    openssl \
-    libssl3 \
-    && apt-get upgrade -y \
-    && apt-get clean \
+    libpq5 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 5. Secure Non-root user setup
-RUN groupadd -r clinical-staff && useradd -r -g clinical-staff -m nurse-wael \
-    && chown -R nurse-wael:clinical-staff /app
+# non-root user
+RUN groupadd -r app && useradd -r -g app -m app
 
-# 6. Copy artifacts from builder with correct permissions
-# We copy ONLY what is needed to run, leaving the compilers behind
-COPY --from=builder --chown=nurse-wael:clinical-staff /root/.local /home/nurse-wael/.local
-COPY --from=builder --chown=nurse-wael:clinical-staff /app/node_modules ./node_modules
-COPY --from=builder --chown=nurse-wael:clinical-staff /app/prisma ./prisma
+# Python dependencies from builder
+COPY --from=builder --chown=app:app /root/.local /home/app/.local
 
-# 7. Copy application code
-COPY --chown=nurse-wael:clinical-staff . .
+# Prisma runtime artifacts ONLY (no CLI, no tooling)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-USER nurse-wael
+# application + schema
+COPY --chown=app:app prisma ./prisma
+COPY --chown=app:app . .
+
+USER app
 
 EXPOSE 8000
 
-# 8. Senior Healthcheck: Using Python instead of Curl
-# This removes the 'curl' library vulnerabilities from your Trivy report!
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
+# lightweight healthcheck (no external binaries)
+HEALTHCHECK CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
