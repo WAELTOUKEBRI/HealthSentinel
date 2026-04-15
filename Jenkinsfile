@@ -89,26 +89,25 @@ pipeline {
         stage('Build & Scan') {
             parallel {
 
-                /* -------- BACKEND -------- */
+                /* ================= BACKEND ================= */
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
-                            /* ===== SBOM (ARTIFACT ONLY) ===== */
+                            /* ===== SBOM FIXED (PERSISTED PROPERLY) ===== */
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                            -v ${WORKSPACE}/healthsentinel-backend:/out \
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
-                            -o sbom-backend.json \
+                            -o /out/sbom-backend.json \
                             ${DOCKER_IMAGE_BACKEND}:latest
                             '''
 
-                            /* Archive SBOM */
-                            archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', fingerprint: true
 
                             /* ===== CRITICAL GATE ===== */
                             sh '''
@@ -133,25 +132,25 @@ pipeline {
                     }
                 }
 
-                /* -------- FRONTEND -------- */
+                /* ================= FRONTEND ================= */
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
 
                             sh "docker build --no-cache -t ${DOCKER_IMAGE_FRONTEND}:latest ."
 
-                            /* ===== SBOM (ARTIFACT ONLY) ===== */
+                            /* ===== SBOM FIXED (PERSISTED PROPERLY) ===== */
                             sh '''
                             docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                            -v ${WORKSPACE}/healthsentinel-frontend:/out \
                             aquasec/trivy:0.50.1 image \
                             --format cyclonedx \
-                            -o sbom-frontend.json \
+                            -o /out/sbom-frontend.json \
                             ${DOCKER_IMAGE_FRONTEND}:latest
                             '''
 
-                            archiveArtifacts artifacts: 'sbom-frontend.json', fingerprint: true
+                            archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', fingerprint: true
 
                             /* ===== CRITICAL GATE ===== */
                             sh '''
@@ -179,7 +178,7 @@ pipeline {
         }
 
         /* =========================
-           SONARQUBE QUALITY GATE
+           SONARQUBE
         ========================= */
         stage('SonarQube Analysis') {
             steps {
