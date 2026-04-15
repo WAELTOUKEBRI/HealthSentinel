@@ -82,24 +82,23 @@ pipeline {
                     sh '''
                        docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
-                         aquasec/trivy:0.50.1 image \
+                         aquasec/trivy:0.50.1 image healthsentinel-frontend:latest \
                         --severity HIGH,CRITICAL \
                         --ignore-unfixed \
                         --format table \
                         --timeout 15m \
-                        --ignorefile /dev/stdin
-                        healthsentinel-frontend:latest <<EOF
-                         CVE-2024-21538
-                         CVE-2025-64756
-                         CVE-2026-26996
-                         CVE-2026-27903
-                         CVE-2026-27904
-                         CVE-2026-23745
-                         CVE-2026-23950
-                         CVE-2026-24842
-                         CVE-2026-26960
-                         CVE-2026-29786
-                         CVE-2026-31802
+                        --ignorefile /dev/stdin <<EOF
+                    CVE-2024-21538
+                    CVE-2025-64756
+                    CVE-2026-26996
+                    CVE-2026-27903
+                    CVE-2026-27904
+                    CVE-2026-23745
+                    CVE-2026-23950
+                    CVE-2026-24842
+                    CVE-2026-26960
+                    CVE-2026-29786
+                    CVE-2026-31802
                     EOF
                     '''
                 }
