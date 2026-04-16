@@ -81,6 +81,30 @@ pipeline {
             }
         }
 
+
+
+        stage('Testing & Coverage') {
+    parallel {
+        stage('Backend Tests') {
+            steps {
+                dir('healthsentinel-backend') {
+                    // Assuming you have a test script in package.json or use pytest
+                    sh 'npm install && npm run test:coverage' 
+                }
+            }
+        }
+        stage('Frontend Tests') {
+            steps {
+                dir('healthsentinel-frontend') {
+                    sh 'npm install && npm run test:coverage'
+                }
+            }
+        }
+    }
+}
+
+
+
         stage('Build & Scan') {
             parallel {
                 stage('Backend') {
@@ -96,7 +120,7 @@ pipeline {
                               -v \$(pwd):/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
-                              --download-timeout 15m \
+                              --timeout 15m \
                               -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
                             """
@@ -106,7 +130,7 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
-                              --download-timeout 15m \
+                              --timeout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
                               --ignore-unfixed \
