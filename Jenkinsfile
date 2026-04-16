@@ -5,8 +5,9 @@ pipeline {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
         REGION = "eu-west-3"
-        TRIVY_CACHE = "/home/jenkins/trivy-cache"
+        TRIVY_CACHE = "${WORKSPACE}/.trivy-cache"
         SBOM_DIR = "${WORKSPACE}/sbom"
+        SONAR_HOST_URL = "http://hs-sonarqube:9000"
     }
 
     stages {
@@ -25,9 +26,9 @@ pipeline {
                     steps {
                         sh '''
                         docker run --rm \
-                        -v ${WORKSPACE}:/path \
+                        -v ${WORKSPACE}:/src \
                         zricethezav/gitleaks:latest detect \
-                        --source /path --no-git
+                        --source /src --verbose
                         '''
                     }
                 }
@@ -129,7 +130,12 @@ pipeline {
                         dir('healthsentinel-frontend') {
 
                             sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
-                            sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest ."
+
+                            sh """
+                            docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest \
+                            --build-arg NEXT_PUBLIC_API_URL=/api \
+                            --build-arg NEXT_PUBLIC_WS_URL=/ws/patients .
+                            """
 
                             sh '''
                             mkdir -p ${SBOM_DIR}
@@ -187,7 +193,9 @@ pipeline {
                             -Dsonar.sources=. \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**
+                            -Dsonar.python.version=3 \
+                            -Dsonar.javascript.node.max_old_space_size=4096 \
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**,**/sbom/**
                             """
                         }
                     }
@@ -197,7 +205,7 @@ pipeline {
 
         stage('SonarQube Quality Gate') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }

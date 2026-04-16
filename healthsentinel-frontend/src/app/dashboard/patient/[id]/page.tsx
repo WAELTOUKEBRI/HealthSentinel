@@ -56,52 +56,62 @@ export default function PatientDetailPage() {
   const [heartRateHistory, setHeartRateHistory] = useState<number[]>(new Array(60).fill(70));
 
   useEffect(() => {
+    // These relative paths tell the browser to use the Nginx proxy
+    const apiPath = process.env.NEXT_PUBLIC_API_URL || "/api";
+    const wsPath = process.env.NEXT_PUBLIC_WS_URL || "/ws/patients";
+
+    // Build the full WebSocket URL based on the current browser location
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    const finalWsUrl = `${protocol}//${host}${wsPath}`;
+
     const fetchData = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://healthsentinel-alb-prod-480870509.eu-west-3.elb.amazonaws.com";
-        const response = await fetch(`${apiUrl}/api/patients`);
+        // This will fetch from http://localhost/api/patients
+        const response = await fetch(`${apiPath}/patients`);
         const data = await response.json();
         const found = data.find((p: any) => String(p.id) === String(params.id));
-        
+
         if (found) {
-            const enrichedPatient = {
-                ...found,
-                oxygenSaturation: found.oxygenSaturation || 98,
-                respirationRate: found.respirationRate || 16,
-                temperature: found.temperature || 36.8,
-                systolicBP: found.systolicBP || 122,
-            };
-            setPatient({ ...enrichedPatient, status: getStatusFromVitals(enrichedPatient) });
+          const enrichedPatient = {
+            ...found,
+            oxygenSaturation: found.oxygenSaturation || 98,
+            respirationRate: found.respirationRate || 16,
+            temperature: found.temperature || 36.8,
+            systolicBP: found.systolicBP || 122,
+          };
+          setPatient({ ...enrichedPatient, status: getStatusFromVitals(enrichedPatient) });
         }
         setLoading(false);
-      } catch (err) { console.error(err); }
+      } catch (err) { 
+        console.error("Fetch error:", err); 
+        setLoading(false);
+      }
     };
-    
+
     fetchData();
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://healthsentinel-alb-prod-480870509.eu-west-3.elb.amazonaws.com/ws/patients";
-    const socket = new WebSocket(wsUrl);
-    
+    // Connect to WebSocket via Nginx
+    const socket = new WebSocket(finalWsUrl);
+
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       const found = data.find((p: any) => String(p.id) === String(params.id));
-      
+
       if (found) {
         setHeartRateHistory(prev => [...prev.slice(1), found.heartRate]);
         setPatient((prev: any) => {
+          if (!prev) return found;
           const updated = {
             ...prev,
             ...found,
             displayRate: found.heartRate,
-            oxygenSaturation: found.oxygenSaturation || prev?.oxygenSaturation || 98,
-            respirationRate: found.respirationRate || prev?.respirationRate || 16,
-            temperature: found.temperature || prev?.temperature || 36.8,
-            systolicBP: found.systolicBP || prev?.systolicBP || 122,
           };
           return { ...updated, status: getStatusFromVitals(updated) };
         });
       }
     };
+
     return () => socket.close();
   }, [params.id]);
 
