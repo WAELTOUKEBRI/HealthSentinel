@@ -28,19 +28,22 @@ pipeline {
                         docker run --rm \
                         -v ${WORKSPACE}:/src \
                         zricethezav/gitleaks:latest detect \
-                        --source /src --verbose
+                        --source /src --no-git --verbose
                         '''
                     }
                 }
 
                 stage('Bandit') {
                     steps {
-                        sh '''
+                        sh """
                         docker run --rm \
                         -v ${WORKSPACE}:/src \
                         -w /src/healthsentinel-backend \
-                        cytopia/bandit -r . --exclude ./venv -ll
-                        '''
+                        cytopia/bandit -r . --exclude ./venv -ll -f json -o /src/healthsentinel-backend/bandit-report.json
+                        """
+
+                        // Optional: This makes the report visible in the Jenkins UI
+                        archiveArtifacts artifacts: 'healthsentinel-backend/bandit-report.json', allowEmptyArchive: true
                     }
                 }
             }
@@ -85,7 +88,7 @@ pipeline {
                             sh "docker rmi -f ${DOCKER_IMAGE_BACKEND}:latest || true"
                             sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
-                            sh '''
+                            sh """
                             mkdir -p ${SBOM_DIR}
 
                             docker run --rm \
@@ -96,9 +99,9 @@ pipeline {
                               --format cyclonedx \
                               -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
-                            '''
+                            """
 
-                            sh '''
+                            sh """
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
@@ -108,9 +111,11 @@ pipeline {
                               --ignore-unfixed \
                               --ignorefile .trivyignore \
                               ${DOCKER_IMAGE_BACKEND}:latest
-                            '''
+                            """
+                            // 3. Archive the results
+                            archiveArtifacts artifacts: 'sbom-backend.json', allowEmptyArchive: true
 
-                            sh '''
+                            sh """
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
@@ -120,7 +125,7 @@ pipeline {
                               --ignorefile .trivyignore \
                               --format table \
                               ${DOCKER_IMAGE_BACKEND}:latest
-                            '''
+                            """
                         }
                     }
                 }
@@ -137,7 +142,7 @@ pipeline {
                             --build-arg NEXT_PUBLIC_WS_URL=/ws/patients .
                             """
 
-                            sh '''
+                            sh """
                             mkdir -p ${SBOM_DIR}
 
                             docker run --rm \
@@ -148,9 +153,9 @@ pipeline {
                               --format cyclonedx \
                               -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
-                            '''
+                            """
 
-                            sh '''
+                            sh """
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
@@ -160,9 +165,9 @@ pipeline {
                               --ignore-unfixed \
                               --ignorefile .trivyignore \
                               ${DOCKER_IMAGE_FRONTEND}:latest
-                            '''
+                            """
 
-                            sh '''
+                            sh """
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
@@ -172,7 +177,10 @@ pipeline {
                               --ignorefile .trivyignore \
                               --format table \
                               ${DOCKER_IMAGE_FRONTEND}:latest
-                            '''
+                            """
+
+                            // 5. Archive the reports for the Jenkins UI
+                            archiveArtifacts artifacts: 'sbom-frontend.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -187,16 +195,16 @@ pipeline {
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
 
-                            sh """
+                            sh '''
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.token=${SONAR_TOKEN} \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.token=$SONAR_TOKEN \
                             -Dsonar.python.version=3 \
                             -Dsonar.javascript.node.max_old_space_size=4096 \
                             -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**,**/sbom/**
-                            """
+                            '''
                         }
                     }
                 }

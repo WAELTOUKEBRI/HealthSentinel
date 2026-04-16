@@ -1,6 +1,7 @@
 # ---------- BUILDER ----------
 FROM python:3.12-slim-bookworm AS builder
 
+ENV PATH="/root/.local/bin:${PATH}"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
