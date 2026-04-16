@@ -11,7 +11,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 deleteDir()
@@ -21,7 +20,6 @@ pipeline {
 
         stage('Security Analysis') {
             parallel {
-
                 stage('Gitleaks') {
                     steps {
                         sh '''
@@ -35,15 +33,21 @@ pipeline {
 
                 stage('Bandit') {
                     steps {
-                        sh """
-                        docker run --rm \
-                        -v ${WORKSPACE}:/src \
-                        -w /src/healthsentinel-backend \
-                        cytopia/bandit -r . --exclude ./venv -ll -f json -o /src/healthsentinel-backend/bandit-report.json
-                        """
-
-                        // Optional: This makes the report visible in the Jenkins UI
-                        archiveArtifacts artifacts: 'bandit-report.json', allowEmptyArchive: true
+                        dir('healthsentinel-backend') {
+                            sh """
+                            docker run --rm \
+                            -v ${WORKSPACE}:/src \
+                            -w /src/healthsentinel-backend \
+                            cytopia/bandit -r . --exclude ./venv -ll -f json -o /src/healthsentinel-backend/bandit-report.json
+                            """
+                        }
+                    }
+                    post {
+                        always {
+                            dir('healthsentinel-backend') {
+                                archiveArtifacts artifacts: 'bandit-report.json', allowEmptyArchive: true
+                            }
+                        }
                     }
                 }
             }
@@ -68,7 +72,6 @@ pipeline {
                 dir('healthsentinel-backend') {
                     sh '''
                     docker build --target builder -t backend-linter .
-
                     docker run --rm \
                     -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
                     backend-linter \
@@ -80,23 +83,20 @@ pipeline {
 
         stage('Build & Scan') {
             parallel {
-
                 stage('Backend') {
                     steps {
                         dir('healthsentinel-backend') {
-
                             sh "docker rmi -f ${DOCKER_IMAGE_BACKEND}:latest || true"
                             sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
                             sh """
-                            mkdir -p ${SBOM_DIR}
-
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v ${SBOM_DIR}:/out \
+                              -v \$(pwd):/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
+                              --download-timeout 15m \
                               -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
                             """
@@ -106,27 +106,19 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
-                              --download-timout 15m \
+                              --download-timeout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
                               --ignore-unfixed \
-                              --ignorefile .trivyignore \
                               ${DOCKER_IMAGE_BACKEND}:latest
                             """
-                            // 3. Archive the results
-                            archiveArtifacts artifacts: 'sbom-backend.json', allowEmptyArchive: true
-
-                            sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              aquasec/trivy:0.50.1 image \
-                              --severity HIGH \
-                              --ignore-unfixed \
-                              --ignorefile .trivyignore \
-                              --format table \
-                              ${DOCKER_IMAGE_BACKEND}:latest
-                            """
+                        }
+                    }
+                    post {
+                        always {
+                            dir('healthsentinel-backend') {
+                                archiveArtifacts artifacts: 'sbom-backend.json', allowEmptyArchive: true
+                            }
                         }
                     }
                 }
@@ -134,9 +126,7 @@ pipeline {
                 stage('Frontend') {
                     steps {
                         dir('healthsentinel-frontend') {
-
                             sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
-
                             sh """
                             docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest \
                             --build-arg NEXT_PUBLIC_API_URL=/api \
@@ -144,14 +134,13 @@ pipeline {
                             """
 
                             sh """
-                            mkdir -p ${SBOM_DIR}
-
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v ${SBOM_DIR}:/out \
+                              -v \$(pwd):/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
+                              --download-timeout 15m \
                               -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
                             """
@@ -161,27 +150,19 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
+                              --download-timeout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
                               --ignore-unfixed \
-                              --ignorefile .trivyignore \
                               ${DOCKER_IMAGE_FRONTEND}:latest
                             """
-
-                            sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              aquasec/trivy:0.50.1 image \
-                              --severity HIGH \
-                              --ignore-unfixed \
-                              --ignorefile .trivyignore \
-                              --format table \
-                              ${DOCKER_IMAGE_FRONTEND}:latest
-                            """
-
-                            // 5. Archive the reports for the Jenkins UI
-                            archiveArtifacts artifacts: 'sbom-frontend.json', allowEmptyArchive: true
+                        }
+                    }
+                    post {
+                        always {
+                            dir('healthsentinel-frontend') {
+                                archiveArtifacts artifacts: 'sbom-frontend.json', allowEmptyArchive: true
+                            }
                         }
                     }
                 }
@@ -192,11 +173,9 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
-
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-
-                            sh '''
+                            sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
@@ -205,7 +184,7 @@ pipeline {
                             -Dsonar.python.version=3 \
                             -Dsonar.javascript.node.max_old_space_size=4096 \
                             -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**,**/sbom/**
-                            '''
+                            """
                         }
                     }
                 }
@@ -225,7 +204,6 @@ pipeline {
         always {
             sh '''
             echo "🧹 Cleaning Docker environment..."
-
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
