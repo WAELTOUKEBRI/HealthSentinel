@@ -43,7 +43,7 @@ pipeline {
                         """
 
                         // Optional: This makes the report visible in the Jenkins UI
-                        archiveArtifacts artifacts: 'healthsentinel-backend/bandit-report.json', allowEmptyArchive: true
+                        archiveArtifacts artifacts: 'bandit-report.json', allowEmptyArchive: true
                     }
                 }
             }
@@ -106,6 +106,7 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
+                              --download-timout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
                               --ignore-unfixed \
