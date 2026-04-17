@@ -1,5 +1,6 @@
 # ---------- BUILD STAGE ----------
 FROM node:20-slim AS builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 WORKDIR /app
 

@@ -1,5 +1,6 @@
 # ---------- BUILDER ----------
 FROM python:3.12-slim-bookworm AS builder
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV PATH="/root/.local/bin:${PATH}"
 ENV PYTHONDONTWRITEBYTECODE=1

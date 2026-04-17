@@ -44,7 +44,7 @@ pipeline {
                     }
                     post {
                         always {
-                                archiveArtifacts artifacts: 'healthsentinel-backend/bandit-report.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/bandit-report.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -86,7 +86,7 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                    sh 'docker run --rm -v $(pwd):/app -w /app backend-linter sh -c "pip install -r requirements.txt && pytest"'
+                    sh 'docker run --rm -v $(pwd):/app -w /app backend-linter sh -c "pip install --user -r requirements.txt && python3 -m pytest"'
                 }
             }
         }
