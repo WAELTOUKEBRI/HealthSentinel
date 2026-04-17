@@ -36,9 +36,9 @@ pipeline {
                         dir('healthsentinel-backend') {
                             sh """
                             docker run --rm \
-                            -v ${WORKSPACE}:/src \
-                            -w /src/healthsentinel-backend \
-                            cytopia/bandit -r . --exclude ./venv -ll -f json -o /src/healthsentinel-backend/bandit-report.json
+                            -v $(pwd):/app \
+                            -w /app \
+                            cytopia/bandit -r . --exclude ./venv -ll -f json -o /app/bandit-report.json
                             """
                         }
                     }
