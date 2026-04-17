@@ -26,12 +26,10 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 COPY prisma ./prisma/
 COPY package*.json ./
 
-RUN npm ci prisma@6.4.1 @prisma/client@6.4.1 dotenv tsx \
-    && DATABASE_URL="postgresql://placeholder" npx prisma generate
+RUN npm install prisma@5.17.0 @prisma/client@5.17.0 \
+    && PRISMA_PY_DEBUG_GENERATOR=1 DATABASE_URL="postgresql://placeholder" npx prisma generate
 
-RUN python3 -m prisma generate --schema=./prisma/schema.prisma \
-    && python3 -m prisma fetch-engine --schema=./prisma/schema.prisma
-
+RUN python3 -m prisma generate --schema=./prisma/schema.prisma --schema=./prisma/schema.prisma
 
 # ---------- RUNTIME ----------
 FROM python:3.12-slim-bookworm AS runner
