@@ -142,7 +142,7 @@ pipeline {
 
                     post {
                         always {
-                                archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/sbom-*.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -184,7 +184,7 @@ pipeline {
                     }
                     post {
                         always {
-                                archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/sbom-*.json', allowEmptyArchive: true
                         }
                     }
                 }
