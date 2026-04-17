@@ -90,7 +90,7 @@ pipeline {
                     sh '''
                     echo "Checking host directory..."
                     ls -la
-                    docker run --rm -v $(pwd):/app -w /app backend-linter sh -c "npm install && npm run test:coverage"
+                    docker run --rm -v $(pwd):/app -w /app backend-linter sh -c \"pip install -r requirements.txt && pytest\"
                     '''
                 }
             }
@@ -101,7 +101,7 @@ pipeline {
                     sh '''
                     echo "Checking host directory..."
                     ls -la
-                    docker run --rm -v $(pwd):/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"
+                    docker run --rm -v $(pwd):/app -w /app node:22-slim sh -c \"npm install && npm run test:coverage\"
                     '''
                 }
             }
