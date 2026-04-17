@@ -81,13 +81,24 @@ pipeline {
 
 
 
-        stage('Volume Check') {
-    steps {
-        dir('healthsentinel-frontend') {
-            sh 'docker run --rm -v $(pwd):/app -w /app node:22-slim ls -la /app'
+        stage('Testing & Coverage') {
+    parallel {
+        stage('Backend Tests') {
+            steps {
+                dir('healthsentinel-backend') {
+                    sh 'docker run --rm -v $(pwd):/app -w /app backend-linter sh -c "pip install -r requirements.txt && pytest"'
+                }
+            }
+        }
+        stage('Frontend Tests') {
+            steps {
+                dir('healthsentinel-frontend') {
+                    sh 'docker run --rm -v $(pwd):/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"'
+                }
+            }
         }
     }
- }
+}
 
 
 
@@ -125,11 +136,10 @@ pipeline {
                             """
                         }
                     }
+
                     post {
                         always {
-                            dir('healthsentinel-backend') {
-                                archiveArtifacts artifacts: 'sbom-backend.json', allowEmptyArchive: true
-                            }
+                                archiveArtifacts artifacts: 'healthsentinel-backend/sbom-backend.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -171,9 +181,7 @@ pipeline {
                     }
                     post {
                         always {
-                            dir('healthsentinel-frontend') {
-                                archiveArtifacts artifacts: 'sbom-frontend.json', allowEmptyArchive: true
-                            }
+                                archiveArtifacts artifacts: 'healthsentinel-frontend/sbom-frontend.json', allowEmptyArchive: true
                         }
                     }
                 }
