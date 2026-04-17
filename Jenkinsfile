@@ -99,9 +99,7 @@ pipeline {
             steps {
                 dir('healthsentinel-frontend') {
                     sh '''
-                    echo "Checking host directory..."
-                    ls -la
-                    docker run --rm -v $(pwd):/app -w /app node:22-slim sh -c \"npm install && npm run test:coverage\"
+                    docker run --rm -u root -v $(p{WORKSPACE}/healthsentinel-frontend:/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"
                     '''
                 }
             }
