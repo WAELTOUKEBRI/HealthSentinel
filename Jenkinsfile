@@ -87,20 +87,14 @@ pipeline {
             steps {
                 dir('healthsentinel-backend') {
                     // Assuming you have a test script in package.json or use pytest
-                    sh '''
-                    echo "Checking host directory..."
-                    ls -la
-                    docker run --rm -v $(pwd):/app -w /app backend-linter sh -c \"pip install -r requirements.txt && pytest\"
-                    '''
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/app -w /app backend-linter sh -c "pip install -r requirements.txt && pytest"'
                 }
             }
         }
         stage('Frontend Tests') {
             steps {
                 dir('healthsentinel-frontend') {
-                    sh '''
-                    docker run --rm -u root -v $(p{WORKSPACE}/healthsentinel-frontend:/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"
-                    '''
+                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"'
                 }
             }
         }
