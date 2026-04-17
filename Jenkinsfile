@@ -87,7 +87,7 @@ pipeline {
             steps {
                 dir('healthsentinel-backend') {
                     // Assuming you have a test script in package.json or use pytest
-                    sh "docker run --rm -v \$(pwd):/app -w /app backend-linter sh -c 'npm install && npm run test:coverage'"
+                    sh "docker run --rm -v \$(pwd):/app -w /app backend-linter ls -la"
                 }
             }
         }

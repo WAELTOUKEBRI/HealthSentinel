@@ -8,6 +8,6 @@
   },
 
     "scripts": {
-  "test:coverage": "echo 'No tests specified yet' && exit 0"
-}
+      "test:coverage": "echo 'No tests specified yet' && exit 0"
+   }
 }
