@@ -20,9 +20,9 @@ services:
     container_name: hs-db
     restart: always
     environment:
-      POSTGRES_USER: wael_admin
-      POSTGRES_PASSWORD: dev_password_123
-      POSTGRES_DB: healthsentinel_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     # Removed public ports for security
     networks:
       - healthsentinel-network
@@ -36,8 +36,8 @@ services:
     restart: always
     environment:
       - PORT=8000
-      - DATABASE_URL=postgresql://wael_admin:dev_password_123@db:5432/healthsentinel_db
-      - CORS_ORIGINS=http://localhost,http://frontend:3000,http://localhost:80 # Added Nginx/Internal allowed origins
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - CORS_ORIGINS=http://localhost,http://frontend:3000,http://localhost:80
     depends_on:
       - db
     networks:

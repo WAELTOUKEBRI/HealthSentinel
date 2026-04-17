@@ -8,6 +8,8 @@ pipeline {
         TRIVY_CACHE = "${WORKSPACE}/.trivy-cache"
         SBOM_DIR = "${WORKSPACE}/sbom"
         SONAR_HOST_URL = "http://hs-sonarqube:9000"
+        PASS = credentials('DB_PASSWORD')
+
     }
 
     stages {
@@ -73,7 +75,7 @@ pipeline {
                     docker build -t healthsentinel-test-image .
                     docker run --rm \
                     --network healthsentinel-network \
-                    -e DATABASE_URL="postgresql://wael_admin:dev_password_123@hs-db:5432/healthsentinel_db" \
+                    -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     healthsentinel-test-image \
                     python3 -m prisma validate --schema=./prisma/schema.prisma
                     '''
@@ -124,6 +126,8 @@ pipeline {
                               --timeout 15m \
                               -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
+                              sudo chown \$(id -u):\$(id -g) sbom-backend.json || true
+
                             """
 
                             sh """
@@ -131,6 +135,7 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
+                              --format table \
                               --timeout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
@@ -142,7 +147,7 @@ pipeline {
 
                     post {
                         always {
-                                archiveArtifacts artifacts: '**/sbom-*.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/sbom-backend.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -167,6 +172,8 @@ pipeline {
                               --timeout 15m \
                               -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
+                              sudo chown \$(id -u):\$(id -g) sbom-frontend.json || true
+
                             """
 
                             sh """
@@ -174,6 +181,7 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
+                              --format table \
                               --timeout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
@@ -184,7 +192,7 @@ pipeline {
                     }
                     post {
                         always {
-                                archiveArtifacts artifacts: '**/sbom-*.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/sbom-frontend.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -197,16 +205,16 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                            sh """
+                            sh '''
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=$SONAR_HOST_URL \
-                            -Dsonar.token=$SONAR_TOKEN \
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.token=${SONAR_TOKEN} \
                             -Dsonar.python.version=3 \
                             -Dsonar.javascript.node.max_old_space_size=4096 \
                             -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**,**/sbom/**
-                            """
+                            '''
                         }
                     }
                 }
