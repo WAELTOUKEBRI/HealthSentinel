@@ -72,7 +72,8 @@ pipeline {
                     # Build the full image so all files (.py, requirements, prisma) are inside
                     docker build -t healthsentinel-test-image .
                     docker run --rm \
-                    -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
+                    --network healthsentinel-network \
+                    -e DATABASE_URL="postgresql://wael_admin:dev_password_123@hs-db:5432/healthsentinel_db" \
                     healthsentinel-test-image \
                     python3 -m prisma validate --schema=./prisma/schema.prisma
                     '''
@@ -87,15 +88,15 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                    sh 'docker run --rm healthsentinel-test-image python3 -m pytest'
+                    sh 'docker run --rm --network healthsentinel-network healthsentinel-test-image python3 -m pytest'
                 }
             }
         }
         stage('Frontend Tests') {
             steps {
                 dir('healthsentinel-frontend') {
-                    sh 'docker build -t frontend-test .'
-                    sh 'docker run --rm frontend-test npm run test:coverage'
+                    sh 'docker build --target builder -t frontend-test .'
+                    sh 'docker run --rm --network healthsentinel-network frontend-test npm run test:coverage'
                 }
             }
         }

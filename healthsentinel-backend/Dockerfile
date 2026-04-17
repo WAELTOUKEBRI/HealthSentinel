@@ -26,8 +26,11 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 COPY prisma ./prisma/
 COPY package*.json ./
 
-RUN npm install prisma@6.4.1 @prisma/client@6.4.1 dotenv tsx \
+RUN npm ci prisma@6.4.1 @prisma/client@6.4.1 dotenv tsx \
     && DATABASE_URL="postgresql://placeholder" npx prisma generate
+
+RUN python3 -m prisma generate --schema=./prisma/schema.prisma \
+    && python3 -m prisma fetch-engine --schema=./prisma/schema.prisma
 
 
 # ---------- RUNTIME ----------
@@ -40,7 +43,7 @@ WORKDIR /app
 
 # runtime deps ONLY (tightened)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 ca-certificates \
+    libpq5 ca-certificates libatomic1 \
     && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,6 +52,7 @@ RUN groupadd -r app && useradd -r -g app -m app
 
 # Python runtime dependencies
 COPY --from=builder --chown=app:app /root/.local /home/app/.local
+COPY --from=builder --chown=app:app /root/.cache/prisma-python /home/app/.cache/prisma-python
 
 # Prisma runtime ONLY (no CLI)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
