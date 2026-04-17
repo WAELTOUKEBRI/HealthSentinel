@@ -87,6 +87,7 @@ services:
 
 networks:
   healthsentinel-network:
+    name: healthsentinel-network
     driver: bridge
 
 volumes:
