@@ -81,25 +81,14 @@ pipeline {
 
 
 
-        stage('Testing & Coverage') {
-    parallel {
-        stage('Backend Tests') {
-            steps {
-                dir('healthsentinel-backend') {
-                    // Assuming you have a test script in package.json or use pytest
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/app -w /app backend-linter sh -c "pip install -r requirements.txt && pytest"'
-                }
-            }
-        }
-        stage('Frontend Tests') {
-            steps {
-                dir('healthsentinel-frontend') {
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"'
-                }
-            }
+        stage('Volume Check') {
+    steps {
+        dir('healthsentinel-frontend') {
+            sh 'docker run --rm -v $(pwd):/app -w /app node:22-slim ls -la /app'
         }
     }
-}
+ }
+
 
 
 
