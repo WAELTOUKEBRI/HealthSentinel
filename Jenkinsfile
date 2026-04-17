@@ -69,10 +69,11 @@ pipeline {
             steps {
                 dir('healthsentinel-backend') {
                     sh '''
-                    docker build --target builder -t backend-linter .
+                    # Build the full image so all files (.py, requirements, prisma) are inside
+                    docker build -t healthsentinel-test-image .
                     docker run --rm \
                     -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
-                    backend-linter \
+                    healthsentinel-test-image \
                     npx prisma validate --schema=./prisma/schema.prisma
                     '''
                 }
@@ -86,7 +87,7 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                    sh 'docker run --rm backend-linter python3 -m pytest'
+                    sh 'docker run --rm healthsentinel-test-image python3 -m pytest'
                 }
             }
         }
