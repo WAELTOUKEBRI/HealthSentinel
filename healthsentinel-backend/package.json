@@ -6,4 +6,8 @@
     "dotenv": "^16.4.0",
     "tsx": "^4.0.0"
   }
+
+    "scripts": {
+  "test:coverage": "echo 'No tests specified yet' && exit 0"
+}
 }

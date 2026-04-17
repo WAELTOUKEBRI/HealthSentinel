@@ -44,7 +44,7 @@ pipeline {
                     }
                     post {
                         always {
-                                archiveArtifacts artifacts: 'bandit-report.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: 'healthsentinel-backend/bandit-report.json', allowEmptyArchive: true
                         }
                     }
                 }
