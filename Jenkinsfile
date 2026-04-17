@@ -44,9 +44,7 @@ pipeline {
                     }
                     post {
                         always {
-                            dir('healthsentinel-backend') {
                                 archiveArtifacts artifacts: 'bandit-report.json', allowEmptyArchive: true
-                            }
                         }
                     }
                 }
@@ -89,14 +87,14 @@ pipeline {
             steps {
                 dir('healthsentinel-backend') {
                     // Assuming you have a test script in package.json or use pytest
-                    sh 'npm install && npm run test:coverage' 
+                    sh 'docker run --rm -v $(pwd):/app -w /app backend-linter sh -c "npm install && npm run test:coverage"'
                 }
             }
         }
         stage('Frontend Tests') {
             steps {
                 dir('healthsentinel-frontend') {
-                    sh 'npm install && npm run test:coverage'
+                    sh 'docker run --rm -v $(pwd):/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"'
                 }
             }
         }
