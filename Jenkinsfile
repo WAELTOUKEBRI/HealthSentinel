@@ -86,14 +86,15 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                    sh 'docker run --rm -v $(pwd):/app -w /app backend-linter sh -c "pip install --user -r requirements.txt && python3 -m pytest"'
+                    sh 'docker run --rm backend-linter python3 -m pytest'
                 }
             }
         }
         stage('Frontend Tests') {
             steps {
                 dir('healthsentinel-frontend') {
-                    sh 'docker run --rm -v $(pwd):/app -w /app node:22-slim sh -c "npm install && npm run test:coverage"'
+                    sh 'docker build -t frontend-test .'
+                    sh 'docker run --rm frontend-test npm run test:coverage'
                 }
             }
         }
