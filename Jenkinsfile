@@ -164,7 +164,7 @@ pipeline {
                               -v \$(pwd):/out \
                               aquasec/trivy:0.50.1 image \
                               --format cyclonedx \
-                              --download-timeout 15m \
+                              --timeout 15m \
                               -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
                             """
@@ -174,7 +174,7 @@ pipeline {
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                               aquasec/trivy:0.50.1 image \
-                              --download-timeout 15m \
+                              --timeout 15m \
                               --severity CRITICAL \
                               --exit-code 1 \
                               --ignore-unfixed \
