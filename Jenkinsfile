@@ -36,7 +36,7 @@ pipeline {
                         dir('healthsentinel-backend') {
                             sh """
                             docker run --rm \
-                            -v $(pwd):/app \
+                            -v \$(pwd):/app \
                             -w /app \
                             cytopia/bandit -r . --exclude ./venv -ll -f json -o /app/bandit-report.json
                             """
