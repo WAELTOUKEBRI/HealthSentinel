@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # minimal build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
     curl ca-certificates gnupg \
     && rm -rf /var/lib/apt/lists/*
 
