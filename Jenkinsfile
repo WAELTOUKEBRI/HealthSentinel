@@ -74,7 +74,7 @@ pipeline {
                     docker run --rm \
                     -e DATABASE_URL="postgresql://user:pass@localhost:5432/db" \
                     healthsentinel-test-image \
-                    npx prisma validate --schema=./prisma/schema.prisma
+                    python3 -m prisma validate --schema=./prisma/schema.prisma
                     '''
                 }
             }

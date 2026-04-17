@@ -2,6 +2,7 @@
 fastapi>=0.115.0
 starlette>=0.40.0
 uvicorn>=0.30.0
+prisma
 
 # Infrastructure & Validation
 pydantic>=2.10.0
