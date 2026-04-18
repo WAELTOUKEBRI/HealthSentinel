@@ -68,7 +68,9 @@ USER root
 RUN chmod -R 555 /home/app/.local && \
     chmod -R 555 /home/app/.cache/prisma-python
 
-RUN chown -R app:app /app 
+RUN chown -R app:app /home/app/.cache/prisma-python && \
+    chmod -R 755 /home/app/.cache/prisma-python
+
 USER app
 
 EXPOSE 8000
