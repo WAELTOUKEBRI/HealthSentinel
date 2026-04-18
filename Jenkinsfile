@@ -92,6 +92,7 @@ pipeline {
                 dir('healthsentinel-backend') {
                   sh """
                     docker run --rm --network healthsentinel-network \
+                    --user root \
                     -v \$(pwd):/app \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     healthsentinel-test-image \
@@ -104,7 +105,7 @@ pipeline {
             steps {
                 dir('healthsentinel-frontend') {
                     sh 'docker build --target builder -t frontend-test .'
-                    sh 'docker run --rm -v \$(pwd):/app frontend-test npm run test:coverage'
+                    sh 'docker run --rm -v \$(pwd):/app -w /app frontend-test npm run test:coverage'
                 }
             }
         }
