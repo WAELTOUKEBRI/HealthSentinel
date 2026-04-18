@@ -96,8 +96,9 @@ pipeline {
                     --user root \
                     -v \$(pwd)/reports:/app/reports \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
+                    -e PYTHONPATH=/app \
                     healthsentinel-test-image \
-                    python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
+                    /home/app/.local/bin/python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
                     cp reports/coverage.xml .
                     """
                 }
