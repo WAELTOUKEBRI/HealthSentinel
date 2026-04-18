@@ -60,6 +60,8 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --chown=app:app prisma ./prisma
 COPY --chown=app:app . .
 
+USER root
+RUN chown -R app:app /app
 USER app
 
 EXPOSE 8000
