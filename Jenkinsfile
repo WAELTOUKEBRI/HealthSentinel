@@ -91,13 +91,14 @@ pipeline {
             steps {
                 dir('healthsentinel-backend') {
                   sh """
-                    touch coverage.xml
+                    mkdir -p reports
                     docker run --rm --network healthsentinel-network \
                     --user root \
-                    -v \$(pwd)/coverage.xml:/app/coverage.xml \
+                    -v \$(pwd)/reports:/app/reports \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     healthsentinel-test-image \
-                    python3 -m pytest --cov=. --cov-report=xml:coverage.xml
+                    python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
+                    cp reports/coverage.xml .
                     """
                 }
             }
@@ -107,7 +108,6 @@ pipeline {
                 dir('healthsentinel-frontend') {
                     sh '''
                     mkdir -p coverage
-                    touch coverage/lcov.info
                     docker build --target builder -t frontend-test .
                     docker run --rm -v \$(pwd)/coverage:/app/coverage frontend-test npm run test:coverage
                     '''
