@@ -90,7 +90,12 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                    sh 'docker run --rm --network healthsentinel-network healthsentinel-test-image python3 -m pytest --cov=. --cov-report=xml:coverage.xml'
+                  sh """
+                    docker run --rm --network healthsentinel-network \
+                    -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
+                    healthsentinel-test-image \
+                    python3 -m pytest --cov=. --cov-report=xml:coverage.xml
+                    """
                 }
             }
         }

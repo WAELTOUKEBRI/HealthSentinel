@@ -39,6 +39,7 @@ ENV PATH="/home/app/.local/bin:$PATH"
 
 WORKDIR /app
 
+
 # runtime deps ONLY (tightened)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 ca-certificates libatomic1 \
@@ -47,6 +48,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # non-root user
 RUN groupadd -r app && useradd -r -g app -m app
+
+# 3. Donner les droits sur le dossier de travail
+RUN chown -R app:app /app
 
 # Python runtime dependencies
 COPY --from=builder --chown=app:app /root/.local /home/app/.local
@@ -60,8 +64,6 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --chown=app:app prisma ./prisma
 COPY --chown=app:app . .
 
-USER root
-RUN chown -R app:app /app
 USER app
 
 EXPOSE 8000
