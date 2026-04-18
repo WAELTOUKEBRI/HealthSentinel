@@ -46,7 +46,7 @@ pipeline {
                     }
                     post {
                         always {
-                                archiveArtifacts artifacts: '**/bandit-report.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/*.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -90,7 +90,7 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                    sh 'docker run --rm --network healthsentinel-network healthsentinel-test-image python3 -m pytest'
+                    sh 'docker run --rm --network healthsentinel-network healthsentinel-test-image python3 -m pytest --cov=. --cov-report=xml:coverage.xml'
                 }
             }
         }
@@ -126,9 +126,9 @@ pipeline {
                               --timeout 15m \
                               -o /out/sbom-backend.json \
                               ${DOCKER_IMAGE_BACKEND}:latest
-                              sudo chown \$(id -u):\$(id -g) sbom-backend.json || true
+                             """
+                            sh "chown \$(id -u):\$(id -g) sbom-backend.json || true"
 
-                            """
 
                             sh """
                             docker run --rm \
@@ -147,7 +147,7 @@ pipeline {
 
                     post {
                         always {
-                                archiveArtifacts artifacts: '**/sbom-backend.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/*.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -172,7 +172,7 @@ pipeline {
                               --timeout 15m \
                               -o /out/sbom-frontend.json \
                               ${DOCKER_IMAGE_FRONTEND}:latest
-                              sudo chown \$(id -u):\$(id -g) sbom-frontend.json || true
+                              chown \$(id -u):\$(id -g) sbom-frontend.json || true
 
                             """
 
@@ -192,7 +192,7 @@ pipeline {
                     }
                     post {
                         always {
-                                archiveArtifacts artifacts: '**/sbom-frontend.json', allowEmptyArchive: true
+                                archiveArtifacts artifacts: '**/*.json', allowEmptyArchive: true
                         }
                     }
                 }
@@ -205,7 +205,7 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                            sh '''
+                            sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
@@ -213,8 +213,11 @@ pipeline {
                             -Dsonar.token=${SONAR_TOKEN} \
                             -Dsonar.python.version=3 \
                             -Dsonar.javascript.node.max_old_space_size=4096 \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,terraform/**,**/sbom/**
-                            '''
+                            -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
+                            -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
+                            -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**
+                            """
                         }
                     }
                 }
@@ -234,6 +237,7 @@ pipeline {
         always {
             sh '''
             echo "🧹 Cleaning Docker environment..."
+            sh 'rm -f healthsentinel-backend/coverage.xml healthsentinel-frontend/coverage/lcov.info || true'
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
