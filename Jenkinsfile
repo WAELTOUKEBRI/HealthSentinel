@@ -92,6 +92,7 @@ pipeline {
                 dir('healthsentinel-backend') {
                   sh """
                     docker run --rm --network healthsentinel-network \
+                    -v \$(pwd):/app \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     healthsentinel-test-image \
                     python3 -m pytest --cov=. --cov-report=xml:coverage.xml
@@ -103,7 +104,7 @@ pipeline {
             steps {
                 dir('healthsentinel-frontend') {
                     sh 'docker build --target builder -t frontend-test .'
-                    sh 'docker run --rm --network healthsentinel-network frontend-test npm run test:coverage'
+                    sh 'docker run --rm -v \$(pwd):/app frontend-test npm run test:coverage'
                 }
             }
         }
@@ -242,7 +243,7 @@ pipeline {
         always {
             sh '''
             echo "🧹 Cleaning Docker environment..."
-            sh 'rm -f healthsentinel-backend/coverage.xml healthsentinel-frontend/coverage/lcov.info || true'
+            rm -f healthsentinel-backend/coverage.xml healthsentinel-frontend/coverage/lcov.info || true
             docker container prune -f || true
             docker image prune -f || true
             docker builder prune -f || true
