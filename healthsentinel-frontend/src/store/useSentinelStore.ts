@@ -29,9 +29,10 @@ export const useSentinelStore = create<SentinelStore>((set) => ({
   criticalCount: 0,
   selectedPatientId: null,
   setPatients: (patients) => {
-    
+
     const criticalCount = patients.filter(p => p.status === 'Critical').length;
     set({ patients, criticalCount });
   },
   setSelectedPatientId: (id) => set({ selectedPatientId: id }),
 }));
+

@@ -101,7 +101,7 @@ export default function PatientStatusCard({
             "h-full flex flex-col transition-all duration-500 bg-card/80 backdrop-blur-md overflow-hidden",
             "border-t-4 border-t-transparent",
             "hover:shadow-2xl hover:-translate-y-2 active:scale-[0.98] cursor-pointer",
-            status === "Critical" ? "border-t-destructive shadow-red-500/10" : 
+            status === "Critical" ? "border-t-destructive shadow-red-500/10" :
             status === "Warning" ? "border-t-orange-500 shadow-orange-500/10" : "border-t-teal-500 shadow-teal-500/10"
           )}
           data-status={status}
@@ -195,3 +195,4 @@ export default function PatientStatusCard({
     </motion.div>
   );
 }
+

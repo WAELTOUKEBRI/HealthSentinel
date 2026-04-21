@@ -103,3 +103,4 @@ if __name__ == "__main__":
     import uvicorn
     HOST = os.getenv("HOST", "0.0.0.0")  # nosec B104
     uvicorn.run(app, host=HOST, port=PORT)
+

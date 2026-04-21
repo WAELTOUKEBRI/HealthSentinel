@@ -55,12 +55,12 @@ export default function Dashboard() {
         const incomingData = JSON.parse(event.data);
         if (isLoading) setIsLoading(false);
         const currentPatients = useSentinelStore.getState().patients;
-        
+
         const updatedList = incomingData.map((updated: any) => {
           const prev = currentPatients.find((p: any) => p.id === updated.id);
           const history = prev?.history || new Array(12).fill(updated.heartRate);
           const newHistory = [...history.slice(1), updated.heartRate];
-          
+
           // Map simulation or real DB fields
           const pData = {
             ...updated,
@@ -266,10 +266,10 @@ export default function Dashboard() {
                 ) : (
                   filteredPatients.map((p, idx) => (
                     <div key={p.id} onClick={() => setSelectedPatient(p)} className={cn("cursor-pointer transition-transform hover:scale-[1.02]", p.status === 'Critical' && 'animate-critical')}>
-                      <PatientStatusCard 
-                        {...p} 
-                        heartRateHistory={p.history || [p.heartRate]} 
-                        index={idx} 
+                      <PatientStatusCard
+                        {...p}
+                        heartRateHistory={p.history || [p.heartRate]}
+                        index={idx}
                       />
                     </div>
                   ))
@@ -282,3 +282,4 @@ export default function Dashboard() {
     </main>
   );
 }
+

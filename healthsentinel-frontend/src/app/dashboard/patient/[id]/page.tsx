@@ -3,10 +3,10 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowLeft, Activity, History, Pill, MapPin, 
-  ShieldCheck, ClipboardList, Wind, Droplets, 
-  Thermometer, Zap 
+import {
+  ArrowLeft, Activity, History, Pill, MapPin,
+  ShieldCheck, ClipboardList, Wind, Droplets,
+  Thermometer, Zap
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,8 +83,8 @@ export default function PatientDetailPage() {
           setPatient({ ...enrichedPatient, status: getStatusFromVitals(enrichedPatient) });
         }
         setLoading(false);
-      } catch (err) { 
-        console.error("Fetch error:", err); 
+      } catch (err) {
+        console.error("Fetch error:", err);
         setLoading(false);
       }
     };
@@ -127,7 +127,7 @@ export default function PatientDetailPage() {
         </Button>
         <Badge className={cn(
             "px-8 py-2 uppercase font-black tracking-widest text-[10px]",
-            patient.status === 'Critical' ? 'bg-red-500 animate-pulse' : 
+            patient.status === 'Critical' ? 'bg-red-500 animate-pulse' :
             patient.status === 'Warning' ? 'bg-orange-500' : 'bg-teal-500'
         )}>
           {patient.status}
@@ -156,12 +156,12 @@ export default function PatientDetailPage() {
             <Line
               data={{
                 labels: heartRateHistory.map((_, i) => i),
-                datasets: [{ 
-                    data: heartRateHistory, 
-                    borderColor: "#2dd4bf", 
+                datasets: [{
+                    data: heartRateHistory,
+                    borderColor: "#2dd4bf",
                     borderWidth: 3,
-                    tension: 0.4, 
-                    pointRadius: 0, 
+                    tension: 0.4,
+                    pointRadius: 0,
                     fill: true,
                     backgroundColor: (context: any) => {
                         const ctx = context.chart.ctx;
@@ -172,15 +172,15 @@ export default function PatientDetailPage() {
                     },
                 }]
               }}
-              options={{ 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                animation: false, 
-                scales: { 
-                    x: { display: false }, 
-                    y: { display: true, min: 40, max: 180, grid: { color: '#ffffff05' }, ticks: { color: '#475569', font: { weight: 'bold', size: 10 } } } 
-                }, 
-                plugins: { legend: { display: false } } 
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: { display: false },
+                    y: { display: true, min: 40, max: 180, grid: { color: '#ffffff05' }, ticks: { color: '#475569', font: { weight: 'bold', size: 10 } } }
+                },
+                plugins: { legend: { display: false } }
               }}
             />
           </CardContent>
@@ -196,7 +196,7 @@ export default function PatientDetailPage() {
               <div className="flex justify-between"><span>Last Assessment:</span><span className="text-slate-500">JUST NOW</span></div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-slate-50 border-none rounded-[2rem] p-4 shadow-xl">
             <CardHeader><CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><Pill className="h-3 w-3" /> Active Protocol</CardTitle></CardHeader>
             <CardContent className="space-y-3">
@@ -215,10 +215,10 @@ export default function PatientDetailPage() {
             { label: "Temp", value: `${patient.temperature}°C`, icon: Thermometer, color: "text-orange-400", bg: "bg-orange-400/5" },
             { label: "Systolic BP", value: patient.systolicBP, icon: Zap, color: "text-emerald-500", bg: "bg-emerald-500/5" },
           ].map((stat, i) => (
-            <motion.div 
-                key={i} 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }} 
+            <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 className={cn("p-8 rounded-[2.5rem] border border-slate-100 shadow-sm", stat.bg)}
             >
@@ -261,3 +261,4 @@ export default function PatientDetailPage() {
     </motion.div>
   );
 }
+
