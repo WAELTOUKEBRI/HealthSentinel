@@ -65,11 +65,10 @@ COPY --chown=app:app prisma ./prisma
 COPY --chown=app:app . .
 
 USER root
-RUN chmod -R 555 /home/app/.local
-
-RUN chown -R app:app /home/app/.cache/prisma-python && \
-    chmod -R 755 /home/app/.cache/prisma-python
-RUN chown -R app:app /app && chmod 555 /app
+RUN chmod -R 555 /home/app/.local \
+&&  chown -R app:app /home/app/.cache/prisma-python \
+&&  chmod -R 755 /home/app/.cache/prisma-python \
+&& chown -R app:app /app && chmod 555 /app
 
 
 USER app

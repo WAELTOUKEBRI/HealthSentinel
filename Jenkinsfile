@@ -106,7 +106,7 @@ pipeline {
 
                     # 4. Fix des chemins pour SonarQube
                     if [ -f coverage.xml ]; then
-                      sed -i 's|filename="/app/|filename="|g' coverage.xml
+                      sed -i 's|filename="/app/|filename="healthsentinel-backend/|g' coverage.xml
                       chmod 644 coverage.xml
                     else
                       echo "❌ ERREUR: coverage.xml non récupéré" && exit 1
@@ -257,7 +257,8 @@ pipeline {
                             -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
                             -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**,**/.coverage
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**,**/.coverage,**/*.config.*,**/*.mjs \
+                            -Dsonar.coverage.exclusions=**/components/ui/**,**/layout/**,**/theme-provider.tsx,**/next.config.ts,**/postcss.config.mjs,**/eslint.config.mjs,**/jest.config.js
                             """
                         }
                     }

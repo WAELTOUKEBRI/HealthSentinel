@@ -54,5 +54,5 @@ def test_cors_headers(client):
         assert allow_origin in ["*", "http://localhost"]
     else:
         # Si None, c'est que FastAPI juge que l'origine est la même ou middleware non déclenché
-        assert True 
+        assert "access-control-allow-origin" not in response.headers
 
