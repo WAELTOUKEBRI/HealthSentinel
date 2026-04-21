@@ -88,33 +88,38 @@ pipeline {
         stage('Testing & Coverage') {
     parallel {
         stage('Backend Tests') {
-            steps {
-                dir('healthsentinel-backend') {
-                    sh """
-                    # 1. On lance le test SANS volume, avec un NOM de conteneur fixe
-                    docker run --name backend-test-exec --network healthsentinel-network \
-                    -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
-                    -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
-                    healthsentinel-test-image \
-                    python3 -m pytest --cov=. --cov-report=xml:coverage.xml || true
+    steps {
+        dir('healthsentinel-backend') {
+            sh """
+            # 1. On force l'écriture dans /tmp pour éviter le 'Permission denied'
+            docker run --name backend-test-exec --network healthsentinel-network \
+            --user root \
+            -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
+            -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
+            -e COVERAGE_FILE=/tmp/.coverage \
+            healthsentinel-test-image \
+            python3 -m pytest --cov=. --cov-report=xml:/tmp/coverage.xml || true
 
-                    # 2. On EXTRAIT le fichier directement du conteneur
-                    docker cp backend-test-exec:/app/coverage.xml . || echo "XML non trouvé dans le conteneur"
-                    
-                    # 3. On nettoie le conteneur immédiatement
-                    docker rm -f backend-test-exec
+            # 2. On extrait depuis /tmp
+            docker cp backend-test-exec:/tmp/coverage.xml . || echo "XML non trouvé"
 
-                    # 4. Fix des chemins pour SonarQube
-                    if [ -f coverage.xml ]; then
-                      sed -i 's|filename="/app/|filename="healthsentinel-backend/|g' coverage.xml
-                      chmod 644 coverage.xml
-                    else
-                      echo "❌ ERREUR: coverage.xml non récupéré" && exit 1
-                    fi
-                    """
-                }
-            }
+            # 3. Nettoyage
+            docker rm -f backend-test-exec
+
+            # 4. Fix des chemins pour SonarQube (Important pour passer de 0% à 81%)
+            if [ -f coverage.xml ]; then
+              # On remplace le chemin interne /app/ par le chemin du projet pour Sonar
+              sed -i 's|filename="|filename="healthsentinel-backend/|g' coverage.xml
+              chmod 644 coverage.xml
+              echo "✅ Coverage récupéré et corrigé !"
+            else
+              echo "❌ ERREUR: coverage.xml non récupéré" && exit 1
+            fi
+            """
         }
+    }
+}
+
         stage('Frontend Tests') {
             steps {
                 dir('healthsentinel-frontend') {
