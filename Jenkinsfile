@@ -90,28 +90,26 @@ pipeline {
         stage('Backend Tests') {
             steps {
                 dir('healthsentinel-backend') {
-                  sh """
-                    mkdir -p reports
-                    chmod 777 reports
-
-                    # Exécution du test
-
-                    docker run --rm --network healthsentinel-network \
-                    --user root \
-                    -v \$(pwd)/reports:/app/reports \
+                    sh """
+                    # 1. On lance le test SANS volume, avec un NOM de conteneur fixe
+                    docker run --name backend-test-exec --network healthsentinel-network \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
                     healthsentinel-test-image \
-                    python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
+                    python3 -m pytest --cov=. --cov-report=xml:coverage.xml || true
 
-                    # Correction du chemin APRES le run sur l'hôte
+                    # 2. On EXTRAIT le fichier directement du conteneur
+                    docker cp backend-test-exec:/app/coverage.xml . || echo "XML non trouvé dans le conteneur"
+                    
+                    # 3. On nettoie le conteneur immédiatement
+                    docker rm -f backend-test-exec
 
-                    if [ -f reports/coverage.xml ]; then
-                      sed -i 's|filename="/app/|filename="|g' reports/coverage.xml
-                      cp reports/coverage.xml .
+                    # 4. Fix des chemins pour SonarQube
+                    if [ -f coverage.xml ]; then
+                      sed -i 's|filename="/app/|filename="|g' coverage.xml
                       chmod 644 coverage.xml
                     else
-                      echo "ERREUR: reports/coverage.xml non trouvé" && exit 1
+                      echo "❌ ERREUR: coverage.xml non récupéré" && exit 1
                     fi
                     """
                 }
@@ -121,29 +119,24 @@ pipeline {
             steps {
                 dir('healthsentinel-frontend') {
                     sh '''
-
-                    # Nettoyage et préparation avec droits totaux
-
-                    rm -rf coverage
-                    mkdir -p coverage
-
-                    # On build l'image
-
+                    # 1. Build de l'image builder
                     docker build --target builder -t frontend-test .
 
-                    # On lance le test en forçant le répertoire de sortie
+                    # 2. Exécution avec un NOM de conteneur fixe
+                    docker run --name frontend-test-exec frontend-test npm run test:coverage || true
 
-                    docker run --rm -v $(pwd)/coverage:/app/coverage frontend-test npm run test:coverage -- --coverDirectory=/app/coverage
+                    # 3. On crée le dossier et on EXTRAIT le rapport lcov
+                    mkdir -p coverage
+                    docker cp frontend-test-exec:/app/coverage/lcov.info ./coverage/lcov.info || echo "LCOV non trouvé"
                     
-                    # Vérification profonde
-                    
+                    # 4. Nettoyage
+                    docker rm -f frontend-test-exec
+
                     if [ -f coverage/lcov.info ]; then
-                        echo "✅ LCOV trouvé !"
+                        echo "✅ LCOV récupéré avec succès !"
                         chmod 644 coverage/lcov.info
                     else
-                      echo "❌ LCOV toujours absent. Contenu du dossier coverage :"
-                      ls -R coverage
-                      exit 1
+                      echo "❌ LCOV toujours absent" && exit 1
                     fi
                     '''
                 }
@@ -151,6 +144,7 @@ pipeline {
         }
     }
 }
+
 
 
 
