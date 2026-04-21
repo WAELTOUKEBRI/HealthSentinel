@@ -92,16 +92,15 @@ pipeline {
                 dir('healthsentinel-backend') {
                   sh """
                     mkdir -p reports
+                    chmod 777 reports
                     docker run --rm --network healthsentinel-network \
                     --user root \
                     -v \$(pwd)/reports:/app/reports \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
                     healthsentinel-test-image \
-                    python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
-                    sed -i 's|filename="/app/|filename="|g' reports/coverage.xml
+                    bash -c "python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml && sed -i 's|filename="/app/|filename="|g' /app/reports/coverage.xml"
                     cp reports/coverage.xml .
-                    chmod 644 coverage.xml
                     """
                 }
             }
@@ -113,7 +112,7 @@ pipeline {
                     mkdir -p coverage
                     docker build --target builder -t frontend-test .
                     docker run --rm -v $(pwd)/coverage:/app/coverage frontend-test npm run test:coverage
-                    chmod 644 coverage/lcov.info
+                    [ -f coverage/lcov.info ] && chmod 644 coverage/lcov.info || echo "LCOV NOT FOUND"
                     '''
                 }
             }
