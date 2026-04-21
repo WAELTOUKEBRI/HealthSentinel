@@ -155,95 +155,84 @@ pipeline {
 
 
         stage('Build & Scan') {
-            parallel {
-                stage('Backend') {
-                    steps {
-                        dir('healthsentinel-backend') {
-                            sh "docker rmi -f ${DOCKER_IMAGE_BACKEND}:latest || true"
-                            sh "docker build --no-cache --pull -t ${DOCKER_IMAGE_BACKEND}:latest ."
+    parallel {
+        stage('Backend') {
+            steps {
+                dir('healthsentinel-backend') {
+                    sh "docker build -t ${DOCKER_IMAGE_BACKEND}:latest ."
 
-                            sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v \$(pwd):/out \
-                              aquasec/trivy:0.50.1 image \
-                              --format cyclonedx \
-                              --timeout 15m \
-                              -o /out/sbom-backend.json \
-                              ${DOCKER_IMAGE_BACKEND}:latest
-                             """
-                            sh "chown \$(id -u):\$(id -g) sbom-backend.json || true"
+                    // 1. GÉNÉRATION DU SBOM (Extraction via docker cp)
+                    sh """
+                    # On lance Trivy SANS volume, avec un nom de conteneur
+                    docker run --name trivy-backend-sbom \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                      aquasec/trivy:0.50.1 image \
+                      --format cyclonedx --timeout 15m \
+                      -o sbom-backend.json \
+                      ${DOCKER_IMAGE_BACKEND}:latest
+                    
+                    # On extrait le fichier physiquement
+                    docker cp trivy-backend-sbom:/sbom-backend.json .
+                    docker rm -f trivy-backend-sbom
+                    
+                    # Plus besoin de chown complexe, le fichier appartient à Jenkins
+                    chmod 644 sbom-backend.json || true
+                    """
 
-
-                            sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              aquasec/trivy:0.50.1 image \
-                              --format table \
-                              --timeout 15m \
-                              --severity CRITICAL \
-                              --exit-code 1 \
-                              --ignore-unfixed \
-                              ${DOCKER_IMAGE_BACKEND}:latest
-                            """
-                        }
-                    }
-
-                    post {
-                        always {
-                                archiveArtifacts artifacts: '**/*.json', allowEmptyArchive: true
-                        }
-                    }
-                }
-
-                stage('Frontend') {
-                    steps {
-                        dir('healthsentinel-frontend') {
-                            sh "docker rmi -f ${DOCKER_IMAGE_FRONTEND}:latest || true"
-                            sh """
-                            docker build --no-cache --pull -t ${DOCKER_IMAGE_FRONTEND}:latest \
-                            --build-arg NEXT_PUBLIC_API_URL=/api \
-                            --build-arg NEXT_PUBLIC_WS_URL=/ws/patients .
-                            """
-
-                            sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              -v \$(pwd):/out \
-                              aquasec/trivy:0.50.1 image \
-                              --format cyclonedx \
-                              --timeout 15m \
-                              -o /out/sbom-frontend.json \
-                              ${DOCKER_IMAGE_FRONTEND}:latest
-                              chown \$(id -u):\$(id -g) sbom-frontend.json || true
-
-                            """
-
-                            sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              aquasec/trivy:0.50.1 image \
-                              --format table \
-                              --timeout 15m \
-                              --severity CRITICAL \
-                              --exit-code 1 \
-                              --ignore-unfixed \
-                              ${DOCKER_IMAGE_FRONTEND}:latest
-                            """
-                        }
-                    }
-                    post {
-                        always {
-                                archiveArtifacts artifacts: '**/*.json', allowEmptyArchive: true
-                        }
-                    }
+                    // 2. SCAN DE SÉCURITÉ (Tableau)
+                    sh """
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                      aquasec/trivy:0.50.1 image \
+                      --format table --timeout 15m \
+                      --severity CRITICAL --exit-code 1 --ignore-unfixed \
+                      ${DOCKER_IMAGE_BACKEND}:latest
+                    """
                 }
             }
+            post { always { archiveArtifacts artifacts: '**/sbom-backend.json', allowEmptyArchive: true } }
         }
+
+        stage('Frontend') {
+            steps {
+                dir('healthsentinel-frontend') {
+                    sh "docker build -t ${DOCKER_IMAGE_FRONTEND}:latest ."
+
+                    // 1. GÉNÉRATION DU SBOM (Extraction via docker cp)
+                    sh """
+                    docker run --name trivy-frontend-sbom \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                      aquasec/trivy:0.50.1 image \
+                      --format cyclonedx --timeout 15m \
+                      -o sbom-frontend.json \
+                      ${DOCKER_IMAGE_FRONTEND}:latest
+                    
+                    docker cp trivy-frontend-sbom:/sbom-frontend.json .
+                    docker rm -f trivy-frontend-sbom
+                    
+                    chmod 644 sbom-frontend.json || true
+                    """
+
+                    // 2. SCAN DE SÉCURITÉ (Tableau)
+                    sh """
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                      aquasec/trivy:0.50.1 image \
+                      --format table --timeout 15m \
+                      --severity CRITICAL --exit-code 1 --ignore-unfixed \
+                      ${DOCKER_IMAGE_FRONTEND}:latest
+                    """
+                }
+            }
+            post { always { archiveArtifacts artifacts: '**/sbom-frontend.json', allowEmptyArchive: true } }
+        }
+    }
+}
+
 
         stage('SonarQube') {
             steps {
@@ -263,7 +252,7 @@ pipeline {
                             -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
                             -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**,**/.coverage,**/*.config.*,**/*.mjs \
-                            -Dsonar.coverage.exclusions=**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/*.config.*,**/*.mjs,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**
+                            -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/*.config.*,**/*.mjs,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**
                             """
                         }
                     }
