@@ -53,8 +53,8 @@ RUN groupadd -r app && useradd -r -g app -m app
 RUN chown -R app:app /app
 
 # Python runtime dependencies
-COPY --from=builder --chown=app:app /root/.local /home/app/.local
-COPY --from=builder --chown=app:app /root/.cache/prisma-python /home/app/.cache/prisma-python
+COPY --from=builder /root/.local /home/app/.local
+COPY --from=builder /root/.cache/prisma-python /home/app/.cache/prisma-python
 
 # Prisma runtime ONLY (no CLI)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
@@ -69,7 +69,7 @@ RUN chmod -R 555 /home/app/.local
 
 RUN chown -R app:app /home/app/.cache/prisma-python && \
     chmod -R 755 /home/app/.cache/prisma-python
-RUN chown -R app:app /app && chmod 775 /app
+RUN chown -R app:app /app && chmod 555 /app
 
 
 USER app

@@ -92,8 +92,6 @@ pipeline {
                 dir('healthsentinel-backend') {
                   sh """
                     mkdir -p reports
-                    touch reports/coverage.xml
-                    chmod 666 reports/coverage.xml
                     docker run --rm --network healthsentinel-network \
                     --user root \
                     -v \$(pwd)/reports:/app/reports \
@@ -101,7 +99,9 @@ pipeline {
                     -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
                     healthsentinel-test-image \
                     python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
+                    sed -i 's|filename="/app/|filename="|g' reports/coverage.xml
                     cp reports/coverage.xml .
+                    chmod 644 coverage.xml
                     """
                 }
             }
@@ -112,7 +112,8 @@ pipeline {
                     sh '''
                     mkdir -p coverage
                     docker build --target builder -t frontend-test .
-                    docker run --rm -v \$(pwd)/coverage:/app/coverage frontend-test npm run test:coverage
+                    docker run --rm -v $(pwd)/coverage:/app/coverage frontend-test npm run test:coverage
+                    chmod 644 coverage/lcov.info
                     '''
                 }
             }
@@ -224,14 +225,14 @@ pipeline {
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=HealthSentinel \
                             -Dsonar.sources=. \
+                            -Dsonar.tests=. \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.python.version=3 \
                             -Dsonar.javascript.node.max_old_space_size=4096 \
                             -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
                             -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**
+                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**,**/.coverage
                             """
                         }
                     }
