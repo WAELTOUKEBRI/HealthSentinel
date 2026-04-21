@@ -93,14 +93,26 @@ pipeline {
                   sh """
                     mkdir -p reports
                     chmod 777 reports
+
+                    # Exécution du test
+
                     docker run --rm --network healthsentinel-network \
                     --user root \
                     -v \$(pwd)/reports:/app/reports \
                     -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
                     -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
                     healthsentinel-test-image \
-                    bash -c "python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml && sed -i 's|filename="/app/|filename="|g' /app/reports/coverage.xml"
-                    cp reports/coverage.xml .
+                    python3 -m pytest --cov=. --cov-report=xml:/app/reports/coverage.xml
+
+                    # Correction du chemin APRES le run sur l'hôte
+
+                    if [ -f reports/coverage.xml ]; then
+                      sed -i 's|filename="/app/|filename="|g' reports/coverage.xml
+                      cp reports/coverage.xml .
+                      chmod 644 coverage.xml
+                    else
+                      echo "ERREUR: reports/coverage.xml non trouvé" && exit 1
+                    fi
                     """
                 }
             }
@@ -109,10 +121,30 @@ pipeline {
             steps {
                 dir('healthsentinel-frontend') {
                     sh '''
+
+                    # Nettoyage et préparation avec droits totaux
+
+                    rm -rf coverage
                     mkdir -p coverage
+
+                    # On build l'image
+
                     docker build --target builder -t frontend-test .
-                    docker run --rm -v $(pwd)/coverage:/app/coverage frontend-test npm run test:coverage
-                    [ -f coverage/lcov.info ] && chmod 644 coverage/lcov.info || echo "LCOV NOT FOUND"
+
+                    # On lance le test en forçant le répertoire de sortie
+
+                    docker run --rm -v $(pwd)/coverage:/app/coverage frontend-test npm run test:coverage -- --coverDirectory=/app/coverage
+                    
+                    # Vérification profonde
+                    
+                    if [ -f coverage/lcov.info ]; then
+                        echo "✅ LCOV trouvé !"
+                        chmod 644 coverage/lcov.info
+                    else
+                      echo "❌ LCOV toujours absent. Contenu du dossier coverage :"
+                      ls -R coverage
+                      exit 1
+                    fi
                     '''
                 }
             }
