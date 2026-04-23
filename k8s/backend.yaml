@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthsentinel-backend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: healthsentinel-backend
+  template:
+    metadata:
+      labels:
+        app: healthsentinel-backend
+    spec:
+      containers:
+      - name: backend
+        # We will update this tag later with Jenkins!
+        image: 563748388981.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://sentinel_admin:Password123@REPLACE_WITH_RDS_ENDPOINT:5432/healthsentinel"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthsentinel-backend-svc
+  namespace: default
+spec:
+  selector:
+    app: healthsentinel-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
