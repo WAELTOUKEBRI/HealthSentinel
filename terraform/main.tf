@@ -14,6 +14,8 @@ module "eks" {
   enable_auto_mode = true
 }
 
+
+
 # --- 3. DATABASE MODULE (The Storage) ---
 module "rds" {
   source       = "./modules/rds"

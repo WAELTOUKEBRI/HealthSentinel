@@ -44,6 +44,7 @@ crash.log
 *.tfvars.json
 override.tf
 override.tf.json
+cluster_addons
 
 # --- Infrastructure Scripts (Keep scripts, ignore configs) ---
 healthsentinel-frontend/infrastructure/ecs/*.json

@@ -1,0 +1,20 @@
+controller:
+  componentName: "jenkins-controller"
+  admin:
+    username: "admin"
+
+  runAsUser: 1000
+  fsGroup: 1000
+  initContainerEnv:
+    - name: "SET_CONTAINER_USER_ID"
+      value: "1000"
+  # We'll use a standard storage class provided by EKS
+  persistence:
+    size: "10Gi"
+  serviceType: "ClusterIP" # We will use port-forwarding for security
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+    - docker-workflow
