@@ -21,7 +21,7 @@ spec:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
-          value: "postgresql://sentinel_admin:Password123@REPLACE_WITH_RDS_ENDPOINT:5432/healthsentinel"
+          value: "postgresql://sentinel_admin:Password123@healthsentinel-db.c3q0qcey6fpt.eu-west-3.rds.amazonaws.com:5432/healthsentinel"
 ---
 apiVersion: v1
 kind: Service
