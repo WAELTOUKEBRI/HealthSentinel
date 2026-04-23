@@ -6,6 +6,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.0"
+    }
   }
 
   backend "s3" {
@@ -19,8 +27,6 @@ terraform {
 
 provider "aws" {
   region = "eu-west-3"
-
-  # This automatically tags every resource with the project name
   default_tags {
     tags = {
       Project   = "HealthSentinel"
