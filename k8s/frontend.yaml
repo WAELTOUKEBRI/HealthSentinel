@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthsentinel-frontend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: healthsentinel-frontend
+  template:
+    metadata:
+      labels:
+        app: healthsentinel-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: 563748388981.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-frontend:latest
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthsentinel-frontend-svc
+  namespace: default
+spec:
+  selector:
+    app: healthsentinel-frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: LoadBalancer # This generates an AWS ELB (External URL)
