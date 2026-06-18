@@ -269,6 +269,33 @@ pipeline {
         }
     }
 
+    stage('Push to AWS ECR') {
+            steps {
+                script {
+                    // Define your AWS Account Registry URL
+                    def ecrRegistry = "563748388981.dkr.ecr.${REGION}.amazonaws.com"
+                    
+                    echo "Authentication with AWS ECR..."
+                    // This uses the Jenkins host's AWS CLI permissions to fetch the token and log Docker in
+                    sh "aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ecrRegistry}"
+                    
+                    echo "Tagging and Pushing Backend Image..."
+                    sh """
+                    docker tag ${DOCKER_IMAGE_BACKEND}:latest ${ecrRegistry}/${DOCKER_IMAGE_BACKEND}:latest
+                    docker push ${ecrRegistry}/${DOCKER_IMAGE_BACKEND}:latest
+                    """
+                    
+                    echo "Tagging and Pushing Frontend Image..."
+                    sh """
+                    docker tag ${DOCKER_IMAGE_FRONTEND}:latest ${ecrRegistry}/${DOCKER_IMAGE_FRONTEND}:latest
+                    docker push ${ecrRegistry}/${DOCKER_IMAGE_FRONTEND}:latest
+                    """
+                    
+                    echo "🚀 Images successfully published to AWS ECR!"
+                }
+            }
+        }
+
     post {
         always {
             sh '''
