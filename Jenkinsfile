@@ -267,9 +267,8 @@ pipeline {
                 }
             }
         }
-    }
 
-    stage('Push to AWS ECR') {
+        stage('Push to AWS ECR') {
             steps {
                 script {
                     // Define your AWS Account Registry URL
