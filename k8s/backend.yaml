@@ -28,7 +28,10 @@ spec:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
-          value: "postgresql://sentinel_admin:ton_mot_de_passe_ultra_secret_123@healthsentinel-db.czq42k200asy.eu-west-3.rds.amazonaws.com:5432/healthsentinel?schema=public"
+          valueFrom:
+            secretKeyRef:
+              name: rds-db-secret
+              key: database-url
 ---
 apiVersion: v1
 kind: Service
