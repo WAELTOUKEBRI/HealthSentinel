@@ -17,11 +17,18 @@ spec:
       - name: backend
         # We will update this tag later with Jenkins!
         image: 563748388981.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-backend:latest
+        # --- AUTOMATED DATABASE MIGRATION ON CONTAINER START ---
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            npx prisma db push
+            npm run dev
+        # -------------------------------------------------------
         ports:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
-          value: "postgresql://sentinel_admin:Password123@healthsentinel-db.c3q0qcey6fpt.eu-west-3.rds.amazonaws.com:5432/healthsentinel"
+          value: "postgresql://sentinel_admin:ton_mot_de_passe_ultra_secret_123@healthsentinel-db.czq42k200asy.eu-west-3.rds.amazonaws.com:5432/healthsentinel?schema=public"
 ---
 apiVersion: v1
 kind: Service

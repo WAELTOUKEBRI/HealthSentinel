@@ -295,6 +295,7 @@ pipeline {
                 }
             }
         }
+      }
 
     post {
         always {

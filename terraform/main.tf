@@ -23,6 +23,7 @@ module "rds" {
   vpc_id       = module.network.vpc_id
   db_subnets   = module.network.database_subnets
   db_password  = var.db_password
+  eks_node_security_group_id = module.eks.node_security_group_id
 }
 
 # --- 4. CONTAINER REGISTRY (ECR) ---

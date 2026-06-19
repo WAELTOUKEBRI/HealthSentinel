@@ -17,7 +17,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "wael-toukebri-healthsentinel-state"
+    bucket         = "wael-toukebri-healthsentinel-state-v2"
     key            = "dev/terraform.tfstate"
     region         = "eu-west-3"
     dynamodb_table = "healthsentinel-tf-lock"

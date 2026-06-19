@@ -8,7 +8,7 @@ resource "aws_security_group" "db_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"] # Adjust this to your VPC CIDR for better security
+    security_groups = [var.eks_node_security_group_id] # Restricts access ONLY to EKS workers
   }
 
   egress {
@@ -33,7 +33,7 @@ resource "aws_db_instance" "healthsentinel_db" {
   allocated_storage    = 20
   db_name              = var.db_name
   engine               = "postgres"
-  engine_version       = "15"
+  engine_version       = "16"
   instance_class       = "db.t3.micro"
   username             = "sentinel_admin"
   password             = var.db_password
@@ -47,3 +47,4 @@ variable "db_name" {}
 variable "vpc_id" {}
 variable "db_subnets" {}
 variable "db_password" {}
+variable "eks_node_security_group_id" {}
