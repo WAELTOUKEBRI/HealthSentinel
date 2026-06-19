@@ -6,7 +6,7 @@ WORKDIR /app
 
 # install OS deps (Debian way)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
+    libgnutls30 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 ARG NEXT_PUBLIC_API_URL

@@ -42,7 +42,7 @@ WORKDIR /app
 
 # runtime deps ONLY (tightened)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 ca-certificates libatomic1 \
+    libgnutls30 libpq5 ca-certificates libatomic1 \
     && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
