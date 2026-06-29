@@ -23,6 +23,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Prisma generation (build-time only)
+COPY prisma.config.ts ./
 COPY prisma ./prisma/
 COPY package*.json ./
 
