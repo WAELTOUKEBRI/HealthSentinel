@@ -123,7 +123,7 @@ pipeline {
         stage('Frontend Tests') {
             steps {
                 dir('healthsentinel-frontend') {
-                 i   sh '''
+                    sh '''
                     # 1. Build de l'image builder
                     docker build --target builder \
                     --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \

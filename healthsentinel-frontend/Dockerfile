@@ -9,6 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgnutls30 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+
 
 COPY package.json package-lock.json ./
 RUN test -f package-lock.json || (echo "LOCKFILE MISSING" && exit 1)
