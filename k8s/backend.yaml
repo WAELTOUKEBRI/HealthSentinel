@@ -15,15 +15,8 @@ spec:
     spec:
       containers:
       - name: backend
-        # We will update this tag later with Jenkins!
         image: 856021349334.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-backend:latest
-        # --- AUTOMATED DATABASE MIGRATION ON CONTAINER START ---
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            npx prisma db push
-            npm run dev
-        # -------------------------------------------------------
+        # --- FIXED PRODUCTION ENTRYPOINT FOR FASTAPI ---
         ports:
         - containerPort: 8000
         env:
