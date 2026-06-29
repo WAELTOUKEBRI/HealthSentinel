@@ -272,7 +272,7 @@ pipeline {
             steps {
                 script {
                     // Define your AWS Account Registry URL
-                    def ecrRegistry = "563748388981.dkr.ecr.${REGION}.amazonaws.com"
+                    def ecrRegistry = "856021349334.dkr.ecr.${REGION}.amazonaws.com"
                     
                     echo "Authentication with AWS ECR..."
                     // This uses the Jenkins host's AWS CLI permissions to fetch the token and log Docker in

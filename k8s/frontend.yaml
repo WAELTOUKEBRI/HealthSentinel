@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: 563748388981.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-frontend:latest
+        image: 856021349334.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-frontend:latest
         ports:
         - containerPort: 3000
 ---

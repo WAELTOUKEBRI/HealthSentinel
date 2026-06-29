@@ -16,7 +16,7 @@ spec:
       containers:
       - name: backend
         # We will update this tag later with Jenkins!
-        image: 563748388981.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-backend:latest
+        image: 856021349334.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-backend:latest
         # --- AUTOMATED DATABASE MIGRATION ON CONTAINER START ---
         command: ["/bin/sh", "-c"]
         args:
