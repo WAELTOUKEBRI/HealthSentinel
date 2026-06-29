@@ -126,8 +126,8 @@ pipeline {
                  i   sh '''
                     # 1. Build de l'image builder
                     docker build --target builder \
-                    --build-arg NEXT_PUBLIC_API_URL="http://a2689d0f35e0a4a8796b4316e731275c-1787830643.eu-west-3.elb.amazonaws.com" \
-                    --build-arg NEXT_PUBLIC_WS_URL="ws://a2689d0f35e0a4a8796b4316e731275c-1787830643.eu-west-3.elb.amazonaws.com" \
+                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \
+                    --build-arg NEXT_PUBLIC_WS_URL="ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \
                     -t frontend-test .
 
                     # 2. Exécution avec un NOM de conteneur fixe
@@ -203,8 +203,8 @@ pipeline {
                 dir('healthsentinel-frontend') {
                     sh """
                     docker build --no-cache \
-                    --build-arg NEXT_PUBLIC_API_URL="http://a2689d0f35e0a4a8796b4316e731275c-1787830643.eu-west-3.elb.amazonaws.com" \
-                    --build-arg NEXT_PUBLIC_WS_URL="ws://a2689d0f35e0a4a8796b4316e731275c-1787830643.eu-west-3.elb.amazonaws.com" \
+                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \
+                    --build-arg NEXT_PUBLIC_WS_URL="ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \
                     -t ${DOCKER_IMAGE_FRONTEND}:latest .
                    """
 
