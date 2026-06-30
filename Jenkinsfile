@@ -126,7 +126,7 @@ pipeline {
                     sh '''
                     # 1. Build de l'image builder
                     docker build --target builder \
-                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \
+                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api" \
                     --build-arg NEXT_PUBLIC_WS_URL="ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients" \
                     -t frontend-test .
 
@@ -201,12 +201,12 @@ pipeline {
         stage('Frontend') {
             steps {
                 dir('healthsentinel-frontend') {
-                    sh """
+                    sh '''
                     docker build --no-cache \
-                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com" \
+                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api" \
                     --build-arg NEXT_PUBLIC_WS_URL="ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients" \
                     -t ${DOCKER_IMAGE_FRONTEND}:latest .
-                   """
+                   '''
 
                     // 1. GÉNÉRATION DU SBOM (Extraction via docker cp)
                     sh """
