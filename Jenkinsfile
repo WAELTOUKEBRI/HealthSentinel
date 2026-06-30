@@ -125,7 +125,7 @@ pipeline {
               API_ENDPOINT = "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api"
               WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
          }
-            steps {i
+            steps {
                 dir('healthsentinel-frontend') {
                     sh """
                     docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .
