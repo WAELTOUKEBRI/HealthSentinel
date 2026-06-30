@@ -130,14 +130,11 @@ pipeline {
                 dir('healthsentinel-frontend') {
 
                     sh 'docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .'
-                    # 2. Exécution avec un NOM de conteneur fixe
                     docker run --name frontend-test-exec frontend-test npm run test:coverage || true
 
-                    # 3. On crée le dossier et on EXTRAIT le rapport lcov
                     mkdir -p coverage
                     docker cp frontend-test-exec:/app/coverage/lcov.info ./coverage/lcov.info || echo "LCOV non trouvé"
                     
-                    # 4. Nettoyage
                     docker rm -f frontend-test-exec
 
                     if [ -f coverage/lcov.info ]; then
