@@ -128,7 +128,7 @@ pipeline {
         }
             steps {
                 dir('healthsentinel-frontend') {
-                    # 1. Build de l'image builder
+
                     sh 'docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .'
                     # 2. Exécution avec un NOM de conteneur fixe
                     docker run --name frontend-test-exec frontend-test npm run test:coverage || true
