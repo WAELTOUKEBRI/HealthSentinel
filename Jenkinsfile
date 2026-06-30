@@ -122,15 +122,13 @@ pipeline {
 
         stage('Frontend Tests') {
           environment {
-            // Define these explicitly here so Jenkins separates them cleanly from the shell script execution
-            API_ENDPOINT = "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api"
-            WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
-        }
-            steps {
+              API_ENDPOINT = "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api"
+              WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
+         }
+            steps {i
                 dir('healthsentinel-frontend') {
-
                     sh """
-                    docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .'
+                    docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .
                     docker run --name frontend-test-exec frontend-test npm run test:coverage || true
                     mkdir -p coverage
                     docker cp frontend-test-exec:/app/coverage/lcov.info ./coverage/lcov.info || echo "LCOV non trouvé"
