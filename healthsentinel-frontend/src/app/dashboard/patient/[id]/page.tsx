@@ -63,7 +63,9 @@ export default function PatientDetailPage() {
     // Build the full WebSocket URL based on the current browser location
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
-    const finalWsUrl = `${protocol}//${host}${wsPath}`;
+    const finalWsUrl = wsPath.startsWith("ws://") || wsPath.startsWith("wss://")
+      ? wsPath
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${wsPath}`;
 
     const fetchData = async () => {
       try {

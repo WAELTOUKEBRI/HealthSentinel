@@ -121,15 +121,15 @@ pipeline {
 }
 
         stage('Frontend Tests') {
+          environment {
+            // Define these explicitly here so Jenkins separates them cleanly from the shell script execution
+            API_ENDPOINT = "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api"
+            WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
+        }
             steps {
                 dir('healthsentinel-frontend') {
-                    sh '''
                     # 1. Build de l'image builder
-                    docker build --target builder \
-                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api" \
-                    --build-arg NEXT_PUBLIC_WS_URL="ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients" \
-                    -t frontend-test .
-
+                    sh 'docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .'
                     # 2. Exécution avec un NOM de conteneur fixe
                     docker run --name frontend-test-exec frontend-test npm run test:coverage || true
 
@@ -146,7 +146,7 @@ pipeline {
                     else
                       echo "❌ LCOV toujours absent" && exit 1
                     fi
-                    '''
+                    
                 }
             }
         }
@@ -199,14 +199,15 @@ pipeline {
         }
 
         stage('Frontend') {
+          environment {
+            // Define these explicitly here so Jenkins separates them cleanly from the shell script execution
+            API_ENDPOINT = "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api"
+            WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
+        }
             steps {
                 dir('healthsentinel-frontend') {
-                    sh '''
-                    docker build --no-cache \
-                    --build-arg NEXT_PUBLIC_API_URL="http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api" \
-                    --build-arg NEXT_PUBLIC_WS_URL="ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients" \
-                    -t ${DOCKER_IMAGE_FRONTEND}:latest .
-                   '''
+                    sh 'docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .'
+                  
 
                     // 1. GÉNÉRATION DU SBOM (Extraction via docker cp)
                     sh """
