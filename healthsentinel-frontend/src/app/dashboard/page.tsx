@@ -47,7 +47,7 @@ export default function Dashboard() {
 
   // 1. WebSocket Engine with NEWS2 Data Mapping
   useEffect(() => {
-    const backendUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://healthsentinel-alb-prod-480870509.eu-west-3.elb.amazonaws.com/ws/patients";
+    const backendUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients";
     const ws = new WebSocket(backendUrl);
 
     ws.onmessage = (event) => {
