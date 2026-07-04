@@ -241,16 +241,24 @@ pipeline {
         }
 
         stage('AI Service') {
-           steps {
-               dir('healthsentinel-backend') {
-               echo "🧠 Running model creation inside the backend container environment..."
-            // Reusing your existing test image so all python libraries are natively available
-               sh 'docker run --rm -v $(pwd):/app -w /app healthsentinel-test-image python3 create_model.py'
-             
-               echo "📦 Moving model artifact to AI Service directory..."
-               sh "mv model.pkl ../healthsentinel-ai-service/"
+          steps {
+              dir('healthsentinel-backend') {
+               echo "🧠 Running model creation inside isolated container layers..."
+            // 1. Run the container WITHOUT -v or --rm, and give it a dedicated name
+               sh 'docker run --name ai-model-builder -w /app healthsentinel-test-image python3 create_model.py'
+            
+                echo "📥 Extracting model.pkl artifact to Jenkins workspace..."
+            // 2. Safely copy the generated file out of the container before it disappears
+                sh 'docker cp ai-model-builder:/app/model.pkl .'
+            
+                echo "🧹 Removing temporary builder container..."
+            // 3. Clean up the container now that we have our file
+                sh 'docker rm -f ai-model-builder'
+            
+                 cho "📦 Moving model artifact to AI Service directory..."
+                sh "mv model.pkl ../healthsentinel-ai-service/"
         }
-               dir('healthsentinel-ai-service') {
+              dir('healthsentinel-ai-service') {
                echo "🏗️ Building AI Service Docker image..."
                sh "docker build -t ${DOCKER_IMAGE_AI}:latest ."
             
