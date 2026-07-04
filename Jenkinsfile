@@ -241,24 +241,31 @@ pipeline {
         }
 
         stage('AI Service') {
-               steps {
-                  dir('healthsentinel-backend') {
-                      sh "python3 create_model.py"
-                      sh "mv model.pkl ../healthsentinel-ai-service/"
-                     }
-                  dir('healthsentinel-ai-service') {
-                       sh "docker build -t ${DOCKER_IMAGE_AI}:latest ."
-                       sh """
-                            docker run --rm \
-                              -v /var/run/docker.sock:/var/run/docker.sock \
-                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
-                              aquasec/trivy:0.50.1 image \
-                              --severity CRITICAL --exit-code 1 \
-                              ${DOCKER_IMAGE_AI}:latest
-                       """
-                        }
-                    }
-                }
+           steps {
+               dir('healthsentinel-backend') {
+               echo "🧠 Running model creation inside the backend container environment..."
+            // Reusing your existing test image so all python libraries are natively available
+               sh 'docker run --rm -v $(pwd):/app -w /app healthsentinel-test-image python3 create_model.py'
+             
+               echo "📦 Moving model artifact to AI Service directory..."
+               sh "mv model.pkl ../healthsentinel-ai-service/"
+        }
+               dir('healthsentinel-ai-service') {
+               echo "🏗️ Building AI Service Docker image..."
+               sh "docker build -t ${DOCKER_IMAGE_AI}:latest ."
+            
+               echo "🛡️ Running Trivy Vulnerability Scan..."
+               sh """
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                  aquasec/trivy:0.50.1 image \
+                  --severity CRITICAL --exit-code 1 \
+                  ${DOCKER_IMAGE_AI}:latest
+               """
+        }
+    }
+}
     }
 }
 
