@@ -20,18 +20,50 @@ import { cn } from "@/lib/utils";
 export default function TrainingPage() {
   const [isTraining, setIsTraining] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [logs, setLogs] = useState<string[]>(["System Idle."]);
+
+  const updateLog = (msg: string) => {
+    setLogs(prev => [msg, ...prev].slice(0, 5));
+  };
 
   useEffect(() => {
     let interval: any;
     if (isTraining && progress < 100) {
       interval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 0.8, 100));
+        setProgress(prev => {
+          const next = prev + 0.8;
+          if (next >= 10 && next < 11) updateLog("Provisioning SageMaker instance...");
+          if (next >= 30 && next < 31) updateLog("Syncing S3 training data...");
+          if (next >= 60 && next < 61) updateLog("Executing distributed training...");
+          if (next >= 90 && next < 91) updateLog("Syncing weights to registry...");
+          return Math.min(next, 100);
+        });
       }, 100);
     } else if (progress >= 100) {
       setIsTraining(false);
+      updateLog("Job Complete.");
     }
     return () => clearInterval(interval);
   }, [isTraining, progress]);
+
+  const handleStart = async () => {
+    setIsTraining(true);
+    setProgress(0);
+    updateLog("Initiating SageMaker request...");
+    
+    try {
+      const response = await fetch("http://localhost:8000/api/training/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start" })
+      });
+      if (!response.ok) throw new Error();
+      updateLog("Connection established.");
+    } catch (e) {
+      updateLog("Error: Backend offline.");
+      setIsTraining(false);
+    }
+  };
 
   return (
     <div className="p-8 space-y-10 bg-background min-h-screen pb-32">
@@ -48,7 +80,7 @@ export default function TrainingPage() {
         </div>
 
         <button
-          onClick={() => { setIsTraining(true); setProgress(0); }}
+          onClick={handleStart}
           disabled={isTraining}
           className={cn(
             "flex items-center gap-2 px-8 py-3 font-black uppercase text-xs tracking-widest rounded-xl transition-all shadow-lg",
@@ -102,9 +134,11 @@ export default function TrainingPage() {
         <div className="lg:col-span-4 bg-slate-950 border border-white/10 rounded-[2.5rem] p-8 flex flex-col justify-between">
            <div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" /> Live Loss Curve
+                <BarChart3 className="h-4 w-4" /> Live Training Logs
             </h3>
-            <div className="h-40 w-full border-l border-b border-white/10 relative flex items-end p-2 overflow-hidden">
+            
+            {/* The SVG curve */}
+            <div className="h-24 w-full border-l border-b border-white/10 relative flex items-end p-2 overflow-hidden mb-4">
                 <svg className="w-full h-full">
                     <motion.path
                         d="M 0 100 Q 20 80 40 90 T 80 40 T 120 60 T 160 20 T 200 30"
@@ -112,10 +146,15 @@ export default function TrainingPage() {
                         stroke="#2dd4bf"
                         strokeWidth="2"
                         initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
+                        animate={{ pathLength: isTraining ? 1 : 0 }}
                         transition={{ duration: 2, repeat: Infinity }}
                     />
                 </svg>
+            </div>
+            
+            {/* The Log Lines */}
+            <div className="text-[10px] font-mono text-muted-foreground space-y-1">
+                {logs.map((log, i) => <div key={i}>{log}</div>)}
             </div>
            </div>
            
@@ -125,29 +164,24 @@ export default function TrainingPage() {
                 <span className="text-primary">99.2%</span>
               </div>
               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-[99.2%] shadow-[0_0_15px_#2dd4bf]" />
+                <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
            </div>
         </div>
       </div>
 
-      {/* --- NEW BOTTOM SECTION: STAFF COMPLIANCE & TRAINING --- */}
+      {/* --- BOTTOM SECTION --- */}
       <div className="space-y-6">
         <h2 className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2">
             <Stethoscope className="h-4 w-4" /> Clinical Compliance Modules
         </h2>
-        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { name: "NEWS2 Emergency Protocol", status: "88% Certified", icon: ShieldCheck, color: "text-teal-500" },
             { name: "Sepsis Early Detection", status: "94% Certified", icon: Zap, color: "text-amber-500" },
             { name: "Sentinel-V4 Interface", status: "62% Certified", icon: BrainCircuit, color: "text-blue-500" },
           ].map((mod, i) => (
-            <motion.div 
-              whileHover={{ y: -5 }}
-              key={i} 
-              className="bg-card/30 border border-white/5 p-6 rounded-[2rem] flex items-center gap-6"
-            >
+            <motion.div whileHover={{ y: -5 }} key={i} className="bg-card/30 border border-white/5 p-6 rounded-[2rem] flex items-center gap-6">
               <div className={cn("p-4 rounded-2xl bg-white/5", mod.color)}>
                 <mod.icon className="h-6 w-6" />
               </div>

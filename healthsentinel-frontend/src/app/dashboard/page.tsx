@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,12 +9,12 @@ import PatientStatusCard from "@/components/PatientStatusCard";
 import { Input } from "@/components/ui/input";
 import SystemMetrics from "@/components/SystemMetrics";
 import HeartRateChart from "@/components/HeartRateChart";
+import RiskPredictor from "@/components/RiskPredictor";
 
 const SkeletonCard = () => (
   <div className="h-64 w-full bg-card/20 animate-pulse rounded-2xl border border-white/5" />
 );
 
-// Updated for NEWS2 Awareness
 const getStatusFromVitals = (p: any): "Critical" | "Warning" | "Stable" => {
   if (p.heartRate > 120 || p.heartRate < 50 || p.oxygenSaturation < 92) return "Critical";
   if (p.heartRate > 100 || p.heartRate < 60 || p.oxygenSaturation < 95) return "Warning";
@@ -26,9 +25,12 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { patients, setPatients } = useSentinelStore();
+  const { patients, setPatients, analyzePatientRisk } = useSentinelStore();
   const notifiedPatients = useRef<Set<string>>(new Set());
-
+  const selectedPatientRef = useRef(selectedPatient);
+  useEffect(() => {
+    selectedPatientRef.current = selectedPatient;
+  }, [selectedPatient]);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
@@ -45,44 +47,45 @@ export default function Dashboard() {
     return protocols;
   };
 
-  // 1. WebSocket Engine with NEWS2 Data Mapping
   useEffect(() => {
     const backendUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients";
     const ws = new WebSocket(backendUrl);
-
     ws.onmessage = (event) => {
       try {
         const incomingData = JSON.parse(event.data);
-        if (isLoading) setIsLoading(false);
+        setIsLoading(false);
         const currentPatients = useSentinelStore.getState().patients;
-
         const updatedList = incomingData.map((updated: any) => {
           const prev = currentPatients.find((p: any) => p.id === updated.id);
           const history = prev?.history || new Array(12).fill(updated.heartRate);
           const newHistory = [...history.slice(1), updated.heartRate];
-
-          // Map simulation or real DB fields
           const pData = {
             ...updated,
             history: newHistory,
-            // Fallbacks for demo simulation stability
+            riskScore: prev?.riskScore,
             oxygenSaturation: updated.oxygenSaturation || 98,
             respirationRate: updated.respirationRate || 16,
             temperature: updated.temperature || 36.8,
             systolicBP: updated.systolicBP || 122,
           };
-
-          return { ...pData, status: getStatusFromVitals(pData) };
+          const status = prev?.riskScore !== undefined ? prev.status : getStatusFromVitals(pData);
+          return { ...pData, status };
         });
-
         setPatients(updatedList);
+        const activeId = selectedPatientRef.current?.id;
+        if (activeId) {
+          analyzePatientRisk(activeId);
+        }
       } catch (err) {
         console.error("Data Parse Error:", err);
       }
     };
-
-    return () => ws.close();
-  }, [setPatients, isLoading]);
+    return () => {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    };
+  }, [setPatients, analyzePatientRisk]);
 
   useEffect(() => {
     const syncMute = () => setIsMuted(localStorage.getItem("sonar-muted") === "true");
@@ -133,7 +136,6 @@ export default function Dashboard() {
   const filteredPatients = patients.filter((p) =>
     p.id.toLowerCase().includes(searchTerm.toLowerCase()) || p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   const activePatient = selectedPatient ? patients.find(p => p.id === selectedPatient.id) || selectedPatient : null;
 
   return (
@@ -151,7 +153,6 @@ export default function Dashboard() {
             <span>NODE: EU-WEST-3 (RDS-CONNECTED)</span>
           </div>
         </div>
-
         {!activePatient && (
           <Input
             id="icu-search"
@@ -163,7 +164,6 @@ export default function Dashboard() {
           />
         )}
       </header>
-
       <AnimatePresence mode="wait">
         {activePatient ? (
           <motion.div key="focus" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-12 max-w-7xl mx-auto">
@@ -182,44 +182,40 @@ export default function Dashboard() {
                 {activePatient.status}
               </div>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 bg-[#020817] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl relative overflow-hidden">
-                 <div className="flex justify-between items-center mb-8">
-                   <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-[10px]">
-                     <Activity className="h-4 w-4 animate-pulse" /> LIVE TELEMETRY
-                   </div>
-                   <p className="text-6xl font-black text-primary tabular-nums tracking-tighter">
-                     {activePatient.heartRate} <span className="text-xs uppercase font-bold text-muted-foreground ml-2">BPM</span>
-                   </p>
-                 </div>
-                 <div className="h-[350px]"><HeartRateChart /></div>
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-[10px]">
+                    <Activity className="h-4 w-4 animate-pulse" /> LIVE TELEMETRY
+                  </div>
+                  <p className="text-6xl font-black text-primary tabular-nums tracking-tighter">
+                    {activePatient.heartRate} <span className="text-xs uppercase font-bold text-muted-foreground ml-2">BPM</span>
+                  </p>
+                </div>
+                <div className="h-[350px]"><HeartRateChart /></div>
               </div>
-
               <div className="lg:col-span-4 space-y-6">
-                {/* Expanded Vitals Panel */}
                 <div className="bg-card/40 border border-white/10 rounded-[2rem] p-8 shadow-xl">
                   <div className="flex items-center gap-2 mb-6 text-muted-foreground uppercase text-[10px] font-black tracking-[0.2em]"><Zap className="h-4 w-4" /> NEWS2 PARAMETERS</div>
                   <div className="grid grid-cols-2 gap-4">
-                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-[9px] text-muted-foreground block uppercase font-black">SpO2</span>
-                        <span className="text-xl font-black text-blue-400">{activePatient.oxygenSaturation}%</span>
-                     </div>
-                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-[9px] text-muted-foreground block uppercase font-black">Resp</span>
-                        <span className="text-xl font-black text-sky-400">{activePatient.respirationRate}</span>
-                     </div>
-                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-[9px] text-muted-foreground block uppercase font-black">Temp</span>
-                        <span className="text-xl font-black text-orange-400">{activePatient.temperature}°C</span>
-                     </div>
-                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <span className="text-[9px] text-muted-foreground block uppercase font-black">BP</span>
-                        <span className="text-xl font-black text-emerald-400">{activePatient.systolicBP}</span>
-                     </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                      <span className="text-[9px] text-muted-foreground block uppercase font-black">SpO2</span>
+                      <span className="text-xl font-black text-blue-400">{activePatient.oxygenSaturation}%</span>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                      <span className="text-[9px] text-muted-foreground block uppercase font-black">Resp</span>
+                      <span className="text-xl font-black text-sky-400">{activePatient.respirationRate}</span>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                      <span className="text-[9px] text-muted-foreground block uppercase font-black">Temp</span>
+                      <span className="text-xl font-black text-orange-400">{activePatient.temperature}°C</span>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                      <span className="text-[9px] text-muted-foreground block uppercase font-black">BP</span>
+                      <span className="text-xl font-black text-emerald-400">{activePatient.systolicBP}</span>
+                    </div>
                   </div>
                 </div>
-
                 <div className="bg-card/40 border border-white/10 rounded-[2rem] p-8 shadow-xl">
                   <div className="flex items-center gap-2 mb-6 text-muted-foreground uppercase text-[10px] font-black tracking-[0.2em]"><Pill className="h-4 w-4" /> ACTIVE MEDICATIONS</div>
                   <div className="space-y-3">
@@ -230,33 +226,50 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-10 bg-[#020817] rounded-[3.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-5"><ClipboardList className="h-32 w-32" /></div>
-                <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-6">AI DIAGNOSTIC SUMMARY</h4>
-                    <p className="text-xl font-medium italic text-foreground/90 leading-relaxed bg-white/5 p-8 rounded-[2rem] border border-white/5 backdrop-blur-sm">
-                      "{getAIReason(activePatient)}"
-                    </p>
-                </div>
-                <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground mb-6">RECOMMENDED PROTOCOL</h4>
-                    <div className="space-y-4">
-                        {getProtocols(activePatient).map((rec, i) => (
-                            <div key={i} className="flex items-start gap-4 text-[13px] text-foreground/80 bg-white/5 p-4 rounded-2xl border border-white/5">
-                              <ShieldCheck className="h-5 w-5 text-emerald-500 mt-0.5" />
-                              <span className="font-medium">{rec}</span>
-                            </div>
-                        ))}
+              <div className="absolute top-0 right-0 p-8 opacity-5"><ClipboardList className="h-32 w-32" /></div>
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-6">AI DIAGNOSTIC SUMMARY</h4>
+                <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 backdrop-blur-sm space-y-4">
+                  {activePatient.riskScore !== undefined && (
+                    <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-2">
+                      <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">SageMaker Risk Index</span>
+                      <span className={cn(
+                        "text-xl font-black font-mono",
+                        activePatient.status === 'Critical' ? 'text-red-500' : activePatient.status === 'Warning' ? 'text-orange-400' : 'text-emerald-400'
+                      )}>
+                        {activePatient.riskScore}%
+                      </span>
                     </div>
+                  )}
+                  <p className="text-xl font-medium italic text-foreground/90 leading-relaxed">
+                    "{getAIReason(activePatient)}"
+                  </p>
                 </div>
+              </div>
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground mb-6">RECOMMENDED PROTOCOL</h4>
+                <div className="space-y-4">
+                  {getProtocols(activePatient).map((rec, i) => (
+                    <div key={i} className="flex items-start gap-4 text-[13px] text-foreground/80 bg-white/5 p-4 rounded-2xl border border-white/5">
+                      <ShieldCheck className="h-5 w-5 text-emerald-500 mt-0.5" />
+                      <span className="font-medium">{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         ) : (
           <motion.div key="grid" className="space-y-10">
             <div className="grid gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-1"><SystemMetrics /></div>
-              <div className="lg:col-span-2 bg-card/20 p-6 rounded-2xl border border-white/5 shadow-2xl"><HeartRateChart /></div>
+              <div className="lg:col-span-1 space-y-6">
+                <SystemMetrics />
+                <RiskPredictor />
+              </div>
+              <div className="lg:col-span-2 bg-card/20 p-6 rounded-2xl border border-white/5 shadow-2xl">
+                <HeartRateChart />
+              </div>
             </div>
             <section>
               <h3 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-muted-foreground mb-8 px-2">Live Patient Telemetry Grid</h3>
@@ -282,4 +295,3 @@ export default function Dashboard() {
     </main>
   );
 }
-

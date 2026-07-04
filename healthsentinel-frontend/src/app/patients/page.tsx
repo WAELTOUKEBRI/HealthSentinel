@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Added import
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 export default function PatientsPage() {
   const { patients } = useSentinelStore();
   const [search, setSearch] = useState("");
+  const router = useRouter(); // Initialize router
 
   const filteredPatients = patients.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -29,7 +31,7 @@ export default function PatientsPage() {
 
   return (
     <div className="p-8 space-y-10 min-h-screen relative overflow-hidden transition-colors duration-300 bg-[#f8fafc] dark:bg-[#020617] text-slate-900 dark:text-slate-200">
-      
+
       {/* --- ADAPTIVE BACKGROUND DECORATION --- */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 dark:bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
@@ -92,7 +94,7 @@ export default function PatientsPage() {
 
       {/* --- MAIN CONTENT GRID --- */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-        
+
         {/* PATIENT LIST TABLE */}
         <div className="lg:col-span-8 border rounded-[2.5rem] overflow-hidden backdrop-blur-2xl transition-all border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-900/40 shadow-xl dark:shadow-2xl">
           <div className="p-7 border-b flex justify-between items-center border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
@@ -102,7 +104,7 @@ export default function PatientsPage() {
             </div>
             <Filter className="h-4 w-4 text-slate-500 cursor-pointer hover:text-primary transition-colors" />
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -128,8 +130,8 @@ export default function PatientsPage() {
                         <div className="flex items-center gap-4">
                           <div className={cn(
                             "h-10 w-10 rounded-xl flex items-center justify-center border font-black text-xs transition-colors",
-                            p.status === 'Critical' 
-                              ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-500' 
+                            p.status === 'Critical'
+                              ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-500'
                               : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-500'
                           )}>
                             {p.name.charAt(0)}
@@ -154,7 +156,10 @@ export default function PatientsPage() {
                         </div>
                       </td>
                       <td className="p-7 text-right">
-                        <button className="ml-auto flex items-center gap-2 p-2 px-4 rounded-xl transition-all border text-[9px] font-black uppercase tracking-[0.2em] bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:bg-primary hover:text-white dark:hover:text-black hover:border-primary">
+                        <button 
+                          onClick={() => router.push(`/patients/${p.id}/analysis`)}
+                          className="ml-auto flex items-center gap-2 p-2 px-4 rounded-xl transition-all border text-[9px] font-black uppercase tracking-[0.2em] bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:bg-primary hover:text-white dark:hover:text-black hover:border-primary"
+                        >
                           Analysis <ArrowUpRight className="h-3 w-3" />
                         </button>
                       </td>
@@ -212,7 +217,10 @@ export default function PatientsPage() {
               ))}
             </div>
 
-            <button className="w-full mt-10 py-4 border rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all bg-slate-50 dark:bg-primary/5 border-slate-100 dark:border-primary/20 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white dark:hover:text-black">
+            <button 
+              onClick={() => router.push("/audit-logs")}
+              className="w-full mt-10 py-4 border rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all bg-slate-50 dark:bg-primary/5 border-slate-100 dark:border-primary/20 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white dark:hover:text-black"
+            >
               System Audit Logs
             </button>
           </div>

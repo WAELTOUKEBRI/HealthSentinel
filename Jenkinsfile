@@ -4,11 +4,14 @@ pipeline {
     environment {
         DOCKER_IMAGE_BACKEND = "healthsentinel-backend"
         DOCKER_IMAGE_FRONTEND = "healthsentinel-frontend"
+        DOCKER_IMAGE_AI = "healthsentinel-ai"
         REGION = "eu-west-3"
         TRIVY_CACHE = "${WORKSPACE}/.trivy-cache"
         SBOM_DIR = "${WORKSPACE}/sbom"
         SONAR_HOST_URL = "http://hs-sonarqube:9000"
         PASS = credentials('DB_PASSWORD')
+        IMAGE_TAG = "v1.0.${BUILD_NUMBER}"
+        NAMESPACE = "healthsentinel-prod"
 
     }
 
@@ -230,15 +233,36 @@ pipeline {
                       --severity CRITICAL --exit-code 1 --ignore-unfixed \
                       ${DOCKER_IMAGE_FRONTEND}:latest
                     """
-                }
-            }
+
+       
+      }
+    }
             post { always { archiveArtifacts artifacts: '**/sbom-frontend.json', allowEmptyArchive: true } }
         }
+
+        stage('AI Service') {
+               steps {
+                  dir('healthsentinel-backend') {
+                      sh "python3 create_model.py"
+                      sh "mv model.pkl ../healthsentinel-ai-service/"
+                     }
+                  dir('healthsentinel-ai-service') {
+                       sh "docker build -t ${DOCKER_IMAGE_AI}:latest ."
+                       sh """
+                            docker run --rm \
+                              -v /var/run/docker.sock:/var/run/docker.sock \
+                              -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
+                              aquasec/trivy:0.50.1 image \
+                              --severity CRITICAL --exit-code 1 \
+                              ${DOCKER_IMAGE_AI}:latest
+                       """
+                        }
+                    }
+                }
     }
 }
 
-
-        stage('SonarQube') {
+                stage('SonarQube') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
@@ -272,29 +296,54 @@ pipeline {
             }
         }
 
+
         stage('Push to AWS ECR') {
             steps {
                 script {
-                    // Define your AWS Account Registry URL
-                    def ecrRegistry = "856021349334.dkr.ecr.${REGION}.amazonaws.com"
-                    
-                    echo "Authentication with AWS ECR..."
-                    // This uses the Jenkins host's AWS CLI permissions to fetch the token and log Docker in
-                    sh "aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ecrRegistry}"
-                    
-                    echo "Tagging and Pushing Backend Image..."
-                    sh """
-                    docker tag ${DOCKER_IMAGE_BACKEND}:latest ${ecrRegistry}/${DOCKER_IMAGE_BACKEND}:latest
-                    docker push ${ecrRegistry}/${DOCKER_IMAGE_BACKEND}:latest
-                    """
-                    
-                    echo "Tagging and Pushing Frontend Image..."
-                    sh """
-                    docker tag ${DOCKER_IMAGE_FRONTEND}:latest ${ecrRegistry}/${DOCKER_IMAGE_FRONTEND}:latest
-                    docker push ${ecrRegistry}/${DOCKER_IMAGE_FRONTEND}:latest
-                    """
-                    
-                    echo "🚀 Images successfully published to AWS ECR!"
+                   def ecrRegistry = "856021349334.dkr.ecr.${REGION}.amazonaws.com"
+                   sh "aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ecrRegistry}"
+
+            // Array of images to push
+                   def images = [DOCKER_IMAGE_BACKEND, DOCKER_IMAGE_FRONTEND, DOCKER_IMAGE_AI]
+
+            for (image in images) {
+                   echo "Tagging and Pushing ${image}..."
+                   sh """
+                   docker tag ${image}:latest ${ecrRegistry}/${image}:latest
+                   docker push ${ecrRegistry}/${image}:latest
+                   """
+            }
+            echo "🚀 All images successfully published to ECR!"
+        }
+    }
+}
+        stage('Deploy to EKS') {
+            steps {
+                // Securely binds the kubeconfig file path to a temporary variable
+                withCredentials([file(credentialsId: 'eks-kubeconfig', variable: 'KUBECONFIG_PATH')]) {
+                    script {
+                        echo "⚙️ Injecting unique image tags into manifests..."
+                        sh "sed -i 's|:latest|:${IMAGE_TAG}|g' k8s/backend.yaml"
+                        sh "sed -i 's|:latest|:${IMAGE_TAG}|g' k8s/frontend.yaml"
+                        
+                        echo "📥 Downloading portable kubectl binary..."
+                        // Downloads a static kubectl binary directly into the pipeline workspace
+                        sh '''
+                        curl -LO "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl"
+                        chmod +x ./kubectl
+                        '''
+                        
+                        echo "🚀 Deploying manifests to EKS namespace: ${NAMESPACE}..."
+                        // We explicitly pass the --kubeconfig flag pointing to our Jenkins secret file
+                        sh "./kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f k8s/backend.yaml -n ${NAMESPACE}"
+                        sh "./kubectl --kubeconfig=${KUBECONFIG_PATH} apply -f k8s/frontend.yaml -n ${NAMESPACE}"
+                        
+                        echo "🔄 Verifying rollout status..."
+                        sh "./kubectl --kubeconfig=${KUBECONFIG_PATH} rollout status deployment/healthsentinel-backend -n ${NAMESPACE}"
+                        sh "./kubectl --kubeconfig=${KUBECONFIG_PATH} rollout status deployment/healthsentinel-frontend -n ${NAMESPACE}"
+                        
+                        echo "✅ Deployment completed successfully!"
+                    }
                 }
             }
         }

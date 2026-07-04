@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Activity, History, Pill, MapPin,
@@ -13,13 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Line } from "react-chartjs-2";
 import { cn } from "@/lib/utils";
+import { fetchClinicalRiskScore } from "@/services/inferenceService";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler
 } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
 
-// Unified Clinical Logic (Matches Dashboard)
+// Unified Clinical Logic
 const getStatusFromVitals = (p: any): "Critical" | "Warning" | "Stable" => {
   if (!p) return "Stable";
   if (p.heartRate > 120 || p.heartRate < 50 || (p.oxygenSaturation && p.oxygenSaturation < 92)) return "Critical";
@@ -51,36 +52,73 @@ const getProtocols = (p: any) => {
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const patientId = params?.id ? String(params.id) : null;
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [heartRateHistory, setHeartRateHistory] = useState<number[]>(new Array(60).fill(70));
+  
+  // AI Inference Refs
+  const isFetchingML = useRef(false);
+  const lastFetchedVitalsString = useRef("");
+
+  // Live AI Updater (Decoupled to ensure UI stays fluid)
+  const updatePatientWithAI = useCallback(async (p: any) => {
+    // Always update UI state immediately with new data
+    setPatient((prev: any) => ({ ...prev, ...p, displayRate: p.heartRate }));
+
+    // Only run AI inference if necessary vitals exist
+    if (p.respirationRate != null && p.oxygenSaturation != null && p.systolicBP != null) {
+      const payload = {
+        respirationRate: p.respirationRate,
+        oxygenSaturation: p.oxygenSaturation,
+        systolicBP: p.systolicBP,
+      };
+
+      const vitalsKey = `${payload.respirationRate}-${payload.oxygenSaturation}-${payload.systolicBP}`;
+
+      if (!isFetchingML.current && lastFetchedVitalsString.current !== vitalsKey) {
+        isFetchingML.current = true;
+        try {
+          const aiResult = await fetchClinicalRiskScore(payload);
+          lastFetchedVitalsString.current = vitalsKey;
+          setPatient((prev: any) => ({
+            ...prev,
+            riskScore: Math.round(aiResult.score * 100),
+            status: aiResult.severity,
+          }));
+        } catch (err) {
+          console.error("Prediction Error:", err);
+        } finally {
+          isFetchingML.current = false;
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    // These relative paths tell the browser to use the Nginx proxy
+    if (!patientId) return;
+
     const apiPath = process.env.NEXT_PUBLIC_API_URL || "/api";
     const wsPath = process.env.NEXT_PUBLIC_WS_URL || "/ws/patients";
 
-    // Build the full WebSocket URL based on the current browser location
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
     const finalWsUrl = wsPath.startsWith("ws://") || wsPath.startsWith("wss://")
       ? wsPath
-      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${wsPath}`;
+      : `${protocol}//${window.location.host}${wsPath}`;
 
     const fetchData = async () => {
       try {
-        // This will fetch from http://localhost/api/patients
         const response = await fetch(`${apiPath}/patients`);
         const data = await response.json();
-        const found = data.find((p: any) => String(p.id) === String(params.id));
+        const found = data.find((p: any) => String(p.id) === patientId);
 
         if (found) {
           const enrichedPatient = {
             ...found,
-            oxygenSaturation: found.oxygenSaturation || 98,
-            respirationRate: found.respirationRate || 16,
-            temperature: found.temperature || 36.8,
-            systolicBP: found.systolicBP || 122,
+            oxygenSaturation: found.oxygenSaturation ?? 98,
+            respirationRate: found.respirationRate ?? 16,
+            temperature: found.temperature ?? 36.8,
+            systolicBP: found.systolicBP ?? 122,
           };
           setPatient({ ...enrichedPatient, status: getStatusFromVitals(enrichedPatient) });
         }
@@ -93,32 +131,36 @@ export default function PatientDetailPage() {
 
     fetchData();
 
-    // Connect to WebSocket via Nginx
     const socket = new WebSocket(finalWsUrl);
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const found = data.find((p: any) => String(p.id) === String(params.id));
+      try {
+        const data = JSON.parse(event.data);
+        const found = Array.isArray(data) ? data.find((p: any) => String(p.id) === patientId) : (data?.id === patientId ? data : null);
 
-      if (found) {
-        setHeartRateHistory(prev => [...prev.slice(1), found.heartRate]);
-        setPatient((prev: any) => {
-          if (!prev) return found;
-          const updated = {
-            ...prev,
+        if (found) {
+          // Normalize Data to guarantee AI has values
+          const normalizedPatient = {
             ...found,
-            displayRate: found.heartRate,
+            respirationRate: found.respirationRate ?? 16,
+            oxygenSaturation: found.oxygenSaturation ?? 98,
+            systolicBP: found.systolicBP ?? 122,
+            temperature: found.temperature ?? 36.8,
           };
-          return { ...updated, status: getStatusFromVitals(updated) };
-        });
+          
+          setHeartRateHistory(prev => [...prev.slice(1), normalizedPatient.heartRate]);
+          updatePatientWithAI(normalizedPatient);
+        }
+      } catch (e) {
+        console.error("WebSocket Parsing Error:", e);
       }
     };
 
     return () => socket.close();
-  }, [params.id]);
+  }, [patientId, updatePatientWithAI]);
 
-  if (loading) return <div className="p-20 text-center animate-pulse font-black text-primary">INITIALIZING NEURAL SYNC...</div>;
-  if (!patient) return <div className="p-20 text-center font-black text-destructive">PATIENT NODE NOT FOUND</div>;
+  if (loading) return <div className="p-20 text-center animate-pulse font-black text-primary tracking-widest">INITIALIZING NEURAL SYNC...</div>;
+  if (!patient) return <div className="p-20 text-center font-black text-destructive tracking-widest">PATIENT NODE NOT FOUND</div>;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 space-y-12 max-w-7xl mx-auto pb-32">
@@ -194,8 +236,16 @@ export default function PatientDetailPage() {
             <CardHeader><CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2"><History className="h-3 w-3"/> Clinical Context</CardTitle></CardHeader>
             <CardContent className="text-[11px] font-black uppercase space-y-4">
               <div className="flex justify-between border-b border-slate-200 pb-3"><span>Admission:</span><span className="text-slate-500">2026-04-01</span></div>
-              <div className="flex justify-between border-b border-slate-200 pb-3"><span>Severity Index:</span><span className={patient.status === 'Critical' ? 'text-red-500' : 'text-teal-600'}>{patient.status === 'Critical' ? 'High Risk' : 'Standard'}</span></div>
-              <div className="flex justify-between"><span>Last Assessment:</span><span className="text-slate-500">JUST NOW</span></div>
+              
+              {/* LIVE AI RISK SCORE ADDED HERE */}
+              <div className="flex justify-between border-b border-slate-200 pb-3">
+                <span>SageMaker Risk Index:</span>
+                <span className={cn("text-lg tracking-tighter", patient.status === 'Critical' ? 'text-red-500' : 'text-teal-600')}>
+                  {patient.riskScore !== undefined ? `${patient.riskScore}%` : 'CALCULATING...'}
+                </span>
+              </div>
+              
+              <div className="flex justify-between"><span>Last Assessment:</span><span className="text-slate-500 text-[10px]">LIVE SYNC</span></div>
             </CardContent>
           </Card>
 
@@ -209,7 +259,7 @@ export default function PatientDetailPage() {
         </div>
       </div>
 
-      {/* NEW: NEWS2 Vital Signs Grid */}
+      {/* NEWS2 Vital Signs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { label: "SpO2", value: `${patient.oxygenSaturation}%`, icon: Droplets, color: "text-blue-500", bg: "bg-blue-500/5" },
@@ -263,4 +313,3 @@ export default function PatientDetailPage() {
     </motion.div>
   );
 }
-
