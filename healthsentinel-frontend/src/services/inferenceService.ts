@@ -7,9 +7,16 @@ export interface VitalsPayload {
   respirationRate: number;
   oxygenSaturation: number;
   systolicBP: number;
+  }
+
+export interface InferenceResponse {
+  status: string;
+  score: number;
+  severity: string;
+  reasoning: string;
 }
 
-export async function fetchClinicalRiskScore(vitals: VitalsPayload) {
+export async function fetchClinicalRiskScore(vitals: VitalsPayload): Promise<InferenceResponse> {
   // Defensive: Ensure we never send null to the backend
   const cleanPayload = {
     respirationRate: Number(vitals.respirationRate) || 16,
