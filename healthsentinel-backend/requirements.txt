@@ -29,4 +29,10 @@ websockets==16.0
 
 # AWS SDK for SageMaker Inference
 boto3>=1.34.0
+
+# AWS SDK for SageMaker Inference
+boto3>=1.34.0
 requests==2.32.3
+
+# Machine Learning Core
+joblib>=1.4.0
