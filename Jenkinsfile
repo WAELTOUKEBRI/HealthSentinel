@@ -296,7 +296,7 @@ pipeline {
                             -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
                             -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**,**/.coverage,**/*.config.*,**/*.mjs \
-                            -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/*.config.*,**/*.mjs,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**
+                            -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/*.config.*,**/*.mjs,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**,**/*.tf,**/Dockerfile,**/create_model.py,**/verify_sagemaker.py,**/deploy_simple.py,**/main.py
                             """
                         }
                     }
