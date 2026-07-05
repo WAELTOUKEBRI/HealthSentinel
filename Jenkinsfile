@@ -278,25 +278,23 @@ pipeline {
     }
 }
 
-                stage('SonarQube') {
+        stage('SonarQube') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
                     withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                             sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=HealthSentinel \
-                            -Dsonar.sources=. \
-                            -Dsonar.tests=. \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.javascript.node.max_old_space_size=4096 \
-                            -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
-                            -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
-                            -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
-                            -Dsonar.exclusions=**/node_modules/**,**/venv/**,**/sbom/**,**/.next/**,**/prisma/client/**,**/build/**,**/.coverage,**/*.config.*,**/*.mjs \
-                            -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/*.config.*,**/*.mjs,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**,**/*.tf,**/Dockerfile,**/create_model.py,**/verify_sagemaker.py,**/deploy_simple.py,**/main.py
+                             ${scannerHome}/bin/sonar-scanner \
+                             -Dsonar.projectKey=HealthSentinel \
+                             -Dsonar.sources=healthsentinel-backend,healthsentinel-frontend/src,healthsentinel-ai-service \
+                             -Dsonar.tests=healthsentinel-frontend/src,healthsentinel-backend \
+                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
+                             -Dsonar.host.url=${SONAR_HOST_URL} \
+                             -Dsonar.token=${SONAR_TOKEN} \
+                             -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
+                             -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
+                             -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**,**/create_model.py,**/verify_sagemaker.py,**/deploy_simple.py                        
                             """
                         }
                     }
