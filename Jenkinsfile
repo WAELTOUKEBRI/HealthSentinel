@@ -245,7 +245,7 @@ pipeline {
               dir('healthsentinel-backend') {
                echo "🧠 Running model creation inside isolated container layers..."
             // 1. Run the container WITHOUT -v or --rm, and give it a dedicated name
-               sh 'docker run --name ai-model-builder --user root -w /app healthsentinel-test-image python3 create_model.py'
+               sh 'docker run --name ai-model-builder --user root -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages -w /app healthsentinel-test-image python3 create_model.py'
             
                 echo "📥 Extracting model.pkl artifact to Jenkins workspace..."
             // 2. Safely copy the generated file out of the container before it disappears
