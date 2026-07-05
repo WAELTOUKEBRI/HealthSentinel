@@ -36,3 +36,4 @@ requests==2.32.3
 
 # Machine Learning Core
 joblib>=1.4.0
+scikit-learn>=1.3.0
