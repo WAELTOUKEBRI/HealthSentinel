@@ -255,7 +255,7 @@ pipeline {
             // 3. Clean up the container now that we have our file
                 sh 'docker rm -f ai-model-builder'
             
-                 cho "📦 Moving model artifact to AI Service directory..."
+                 echo "📦 Moving model artifact to AI Service directory..."
                 sh "mv model.pkl ../healthsentinel-ai-service/"
         }
               dir('healthsentinel-ai-service') {
