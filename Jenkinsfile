@@ -268,6 +268,7 @@ pipeline {
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   -v ${TRIVY_CACHE}:/root/.cache/aquasec/trivy \
                   aquasec/trivy:0.50.1 image \
+                  --format table --timeout 15m \
                   --severity CRITICAL --ignore-unfixed --exit-code 1 \
                   ${DOCKER_IMAGE_AI}:latest
                """
