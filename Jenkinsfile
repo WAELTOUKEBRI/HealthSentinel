@@ -131,12 +131,28 @@ pipeline {
             steps {
                 dir('healthsentinel-frontend') {
                     sh """
-                    docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .
-                    docker run --name frontend-test-exec --user root -e HOME=/tmp -v \$(pwd)/src:/app/src --entrypoint /bin/sh healthsentinel-frontend:latest -c  "npm install --include=dev && npm run test:coverage" || true
+                    # 1. Clear any leftover containers from previous failed runs
+                    docker rm -f frontend-test-exec || true
+
+                    # 2. Start a clean, official Node container in the background
+                    docker run -d --name frontend-test-exec --user root --entrypoint sleep node:20 3600
+
+                    # 3. Force-feed your live Jenkins workspace directly into the container
+                    # This completely bypasses the production image optimizations and .dockerignore
+                    docker cp . frontend-test-exec:/app
+
+                    # 4. Run the installation and test scripts inside the isolated container
+                    docker exec -w /app frontend-test-exec npm install --include=dev
+                    docker exec -w /app frontend-test-exec npm run test:coverage || true
+
+                    # 5. Extract the freshly generated LCOV coverage report back out to Jenkins
                     mkdir -p coverage
                     docker cp frontend-test-exec:/app/coverage/lcov.info ./coverage/lcov.info || echo "LCOV non trouvé"
+
+                    # 6. Clean up the temporary test container
                     docker rm -f frontend-test-exec
 
+                    # 7. Final gate check for SonarQube
                     if [ -f coverage/lcov.info ]; then
                         echo "✅ LCOV récupéré avec succès !"
                         chmod 644 coverage/lcov.info
@@ -144,7 +160,6 @@ pipeline {
                       echo "❌ LCOV toujours absent" && exit 1
                     fi
                     """
-                    
                 }
             }
         }
