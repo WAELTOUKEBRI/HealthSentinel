@@ -1,21 +1,62 @@
-import { expect, test, vi } from 'vitest'; // Change to 'jest' if you are using Jest
-import { fetchInference } from './inferenceService'; // <-- Update function name if needed
+import { expect, test, vi, beforeEach } from 'vitest';
+import { fetchClinicalRiskScore } from './inferenceService';
 
-// We mock the global fetch API so it doesn't try to make a real network request
-global.fetch = vi.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ prediction: "Low Risk", confidence: 0.95 }),
-  })
-) as any;
+describe('fetchClinicalRiskScore Coverage Suite', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
 
-test('inferenceService handles API calls successfully', async () => {
-  const dummyPayload = { vitals: "normal" };
-  
-  // Call the service
-  const response = await fetchInference(dummyPayload as any);
-  
-  // Verify it works
-  expect(response).toBeDefined();
-  expect(global.fetch).toHaveBeenCalled();
+  // 1. Hits the successful execution lines
+  test('handles successful API responses', async () => {
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ status: "healthy", score: 0.05, severity: "Stable", reasoning: "Normal parameters" }),
+      })
+    ));
+
+    const result = await fetchClinicalRiskScore({
+      respirationRate: 14,
+      oxygenSaturation: 99,
+      systolicBP: 118
+    });
+
+    expect(result.status).toBe("healthy");
+    expect(result.score).toBe(0.05);
+  });
+
+  // 2. Hits the (!response.ok) error handling branch
+  test('handles backend server errors response gracefully', async () => {
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve("Internal Server Error"),
+      })
+    ));
+
+    const result = await fetchClinicalRiskScore({
+      respirationRate: 16,
+      oxygenSaturation: 98,
+      systolicBP: 120
+    });
+
+    // The function catches the error internally and returns the fallback object
+    expect(result.status).toBe("simulated");
+    expect(result.severity).toBe("Stable");
+  });
+
+  // 3. Hits the catch(error) network failure block
+  test('handles complete network or engine failure gracefully', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error("Network Down"))));
+
+    const result = await fetchClinicalRiskScore({
+      respirationRate: 22,
+      oxygenSaturation: 90,
+      systolicBP: 140
+    });
+
+    expect(result.status).toBe("simulated");
+    expect(result.reasoning).toContain("Heuristic fallback");
+  });
 });
