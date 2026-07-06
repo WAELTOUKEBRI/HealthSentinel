@@ -91,37 +91,45 @@ pipeline {
         stage('Testing & Coverage') {
     parallel {
         stage('Backend Tests') {
-    steps {
-        dir('healthsentinel-backend') {
-            sh """
-            # 1. On force l'écriture dans /tmp pour éviter le 'Permission denied'
-            docker run --name backend-test-exec --network healthsentinel-network \
-            --user root \
-            -e DATABASE_URL="postgresql://wael_admin:${PASS}@hs-db:5432/healthsentinel_db" \
-            -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
-            -e COVERAGE_FILE=/tmp/.coverage \
-            healthsentinel-test-image \
-            python3 -m pytest --cov=. --cov-report=xml:/tmp/coverage.xml || true
+            steps {
+                dir('healthsentinel-backend') {
+                    sh """
+                    # 1. Clear any leftover containers from previous runs
+                    docker rm -f backend-test-exec || true
 
-            # 2. On extrait depuis /tmp
-            docker cp backend-test-exec:/tmp/coverage.xml . || echo "XML non trouvé"
+                    # 2. Start your test image in the background using sleep
+                    docker run -d --name backend-test-exec --network healthsentinel-network \
+                    --user root \
+                    -e DATABASE_URL="postgresql://wael_admin:\${PASS}@hs-db:5432/healthsentinel_db" \
+                    -e PYTHONPATH=/app:/home/app/.local/lib/python3.12/site-packages \
+                    -e COVERAGE_FILE=/tmp/.coverage \
+                    --entrypoint sleep \
+                    healthsentinel-test-image 3600
 
-            # 3. Nettoyage
-            docker rm -f backend-test-exec
+                    # 3. FORCE-FEED your live workspace (with the new test_inference.py) into the container
+                    docker cp . backend-test-exec:/app
 
-            # 4. Fix des chemins pour SonarQube (Important pour passer de 0% à 81%)
-            if [ -f coverage.xml ]; then
-              # On remplace le chemin interne /app/ par le chemin du projet pour Sonar
-              sed -i 's|filename="|filename="healthsentinel-backend/|g' coverage.xml
-              chmod 644 coverage.xml
-              echo "✅ Coverage récupéré et corrigé !"
-            else
-              echo "❌ ERREUR: coverage.xml non récupéré" && exit 1
-            fi
-            """
+                    # 4. Execute pytest inside the updated container environment
+                    docker exec -w /app backend-test-exec python3 -m pytest --cov=. --cov-report=xml:/tmp/coverage.xml || true
+
+                    # 5. Extract the coverage report from /tmp back to Jenkins
+                    docker cp backend-test-exec:/tmp/coverage.xml . || echo "XML non trouvé"
+
+                    # 6. Cleanup the background container
+                    docker rm -f backend-test-exec
+
+                    # 7. Fix paths for SonarQube
+                    if [ -f coverage.xml ]; then
+                      sed -i 's|filename="|filename="healthsentinel-backend/|g' coverage.xml
+                      chmod 644 coverage.xml
+                      echo "✅ Coverage récupéré et corrigé !"
+                    else
+                      echo "❌ ERREUR: coverage.xml non récupéré" && exit 1
+                    fi
+                    """
+                }
+            }
         }
-    }
-}
 
         stage('Frontend Tests') {
           environment {
