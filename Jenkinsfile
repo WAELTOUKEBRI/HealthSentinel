@@ -120,6 +120,8 @@ pipeline {
 
                     # 7. Fix paths for SonarQube
                     if [ -f coverage.xml ]; then
+                      # ⚡ THE FIX: Change the source directory from /app to the current workspace dot
+                      sed -i 's|<source>/app</source>|<source>.</source>|g' coverage.xml
                       sed -i 's|filename="|filename="healthsentinel-backend/|g' coverage.xml
                       chmod 644 coverage.xml
                       echo "✅ Coverage récupéré et corrigé !"
@@ -165,8 +167,7 @@ pipeline {
                         echo "✅ LCOV récupéré avec succès !"
 
                         # Fix container path routing so SonarQube matches the files correctly
-                        sed -i 's|SF:/app/|SF:healthsentinel-frontend/|g' coverage/lcov.info
-                        sed -i 's|SF:src/|SF:healthsentinel-frontend/src/|g' coverage/lcov.info
+                        sed -i 's|SF:.*src/|SF:healthsentinel-frontend/src/|g' coverage/lcov.info
 
                         chmod 644 coverage/lcov.info
                     else
@@ -353,6 +354,8 @@ pipeline {
                    sh """
                    docker tag ${image}:latest ${ecrRegistry}/${image}:latest
                    docker push ${ecrRegistry}/${image}:latest
+                   docker tag ${image}:latest ${ecrRegistry}/${image}:${IMAGE_TAG}
+                   docker push ${ecrRegistry}/${image}:${IMAGE_TAG}
                    """
             }
             echo "🚀 All images successfully published to ECR!"
