@@ -163,6 +163,11 @@ pipeline {
                     # 7. Final gate check for SonarQube
                     if [ -f coverage/lcov.info ]; then
                         echo "✅ LCOV récupéré avec succès !"
+
+                        # Fix container path routing so SonarQube matches the files correctly
+                        sed -i 's|SF:/app/|SF:healthsentinel-frontend/|g' coverage/lcov.info
+                        sed -i 's|SF:src/|SF:healthsentinel-frontend/src/|g' coverage/lcov.info
+
                         chmod 644 coverage/lcov.info
                     else
                       echo "❌ LCOV toujours absent" && exit 1
