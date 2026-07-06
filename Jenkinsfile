@@ -132,7 +132,7 @@ pipeline {
                 dir('healthsentinel-frontend') {
                     sh """
                     docker build --no-cache --build-arg NEXT_PUBLIC_API_URL="$API_ENDPOINT" --build-arg NEXT_PUBLIC_WS_URL="$WS_ENDPOINT" -t healthsentinel-frontend:latest .
-                    docker run --name frontend-test-exec frontend-test npm run test:coverage || true
+                    docker run --name frontend-test-exec healthsentinel-frontend npm run test:coverage || true
                     mkdir -p coverage
                     docker cp frontend-test-exec:/app/coverage/lcov.info ./coverage/lcov.info || echo "LCOV non trouvé"
                     docker rm -f frontend-test-exec
@@ -289,7 +289,7 @@ pipeline {
                              -Dsonar.projectKey=HealthSentinel \
                              -Dsonar.sources=healthsentinel-backend,healthsentinel-frontend/src,healthsentinel-ai-service \
                              -Dsonar.tests=healthsentinel-frontend/src,healthsentinel-backend \
-                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.spec.tsx,**/test_*.py \
+                             -Dsonar.test.inclusions=**/*.test.tsx,**/*.test.ts,**/*.spec.tsx,**/test_*.py \
                              -Dsonar.host.url=${SONAR_HOST_URL} \
                              -Dsonar.token=${SONAR_TOKEN} \
                              -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
