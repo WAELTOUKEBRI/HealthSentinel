@@ -135,8 +135,8 @@ pipeline {
 
         stage('Frontend Tests') {
           environment {
-              API_ENDPOINT = "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/api"
-              WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
+              API_ENDPOINT = "http://aa9aa30fa9e9d4d6c9396a8e7c61a22b-619842886.eu-west-3.elb.amazonaws.com/api"
+              WS_ENDPOINT  = "ws://aa9aa30fa9e9d4d6c9396a8e7c61a22b-619842886.eu-west-3.elb.amazonaws.com/ws/patients"
          }
             steps {
                 dir('healthsentinel-frontend') {
@@ -229,7 +229,7 @@ pipeline {
           environment {
             // Define these explicitly here so Jenkins separates them cleanly from the shell script execution
             API_ENDPOINT = "/api"
-            WS_ENDPOINT  = "ws://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com/ws/patients"
+            WS_ENDPOINT  = "ws://aa9aa30fa9e9d4d6c9396a8e7c61a22b-619842886.eu-west-3.elb.amazonaws.com/ws/patients"
         }
             steps {
                 dir('healthsentinel-frontend') {
