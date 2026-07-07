@@ -320,12 +320,11 @@ pipeline {
                              -Dsonar.tests=healthsentinel-frontend/src,healthsentinel-backend \
                              -Dsonar.test.inclusions=**/*.test.tsx,**/*.test.ts,**/*.spec.tsx,**/test_*.py \
                              -Dsonar.host.url=${SONAR_HOST_URL} \
-                             -Dsonar.token=${SONAR_TOKEN} \
+                             -Dsonar.token=\${SONAR_TOKEN} \
                              -Dsonar.javascript.lcov.reportPaths=healthsentinel-frontend/coverage/lcov.info \
                              -Dsonar.python.coverage.reportPaths=healthsentinel-backend/coverage.xml \
-                             -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**,**/create_model.py,**/verify_sagemaker.py,**/deploy_simple.py,\
-                             **/healthsentinel-ai-service/main.py,**/inferenceService.ts,**/RiskPredictor.tsx
-                            """i
+                             -Dsonar.coverage.exclusions=**/ModeToggle.tsx,**/src/components/ui/**,**/src/components/layout/**,**/src/app/**,**/theme-provider.tsx,**/useSentinelStore.ts,**/HeartRateChart.tsx,**/SystemMetrics.tsx,**/prisma/client/**,**/create_model.py,**/verify_sagemaker.py,**/deploy_simple.py,**/healthsentinel-ai-service/main.py,**/inferenceService.ts,**/RiskPredictor.tsx
+                            """
                         }
                     }
                 }
