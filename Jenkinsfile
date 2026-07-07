@@ -350,15 +350,18 @@ pipeline {
                    def images = [DOCKER_IMAGE_BACKEND, DOCKER_IMAGE_FRONTEND, DOCKER_IMAGE_AI]
 
             for (image in images) {
-                   echo "Tagging and Pushing ${image}..."
-                   sh """
-                   docker tag ${image}:latest ${ecrRegistry}/${image}:latest
-                   docker push ${ecrRegistry}/${image}:latest
-                   docker tag ${image}:latest ${ecrRegistry}/${image}:${IMAGE_TAG}
-                   docker push ${ecrRegistry}/${image}:${IMAGE_TAG}
-                   """
+              echo "Ensuring ECR repository exists for ${image}..."
+               // If describe fails, create the repository on the fly
+              sh "aws ecr describe-repositories --repository-names ${image} --region ${REGION} || aws ecr create-repository --repository-name ${image} --region ${REGION}"
+              echo "Tagging and Pushing ${image}..."
+              sh """
+              docker tag ${image}:latest ${ecrRegistry}/${image}:latest
+              docker push ${ecrRegistry}/${image}:latest
+              docker tag ${image}:latest ${ecrRegistry}/${image}:${IMAGE_TAG}
+              docker push ${ecrRegistry}/${image}:${IMAGE_TAG}
+              """
             }
-            echo "🚀 All images successfully published to ECR!"
+              echo "🚀 All images successfully published to ECR!"
         }
     }
 }
