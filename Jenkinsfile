@@ -373,10 +373,12 @@ pipeline {
                         echo "⚙️ Injecting unique image tags into manifests..."
                         sh "sed -i 's|:latest|:${IMAGE_TAG}|g' k8s/backend.yaml"
                         sh "sed -i 's|:latest|:${IMAGE_TAG}|g' k8s/frontend.yaml"
+                        sh "sed -i 's|:latest|:${IMAGE_TAG}|g' k8s/ai.yaml"
 
                         echo "🏷️ Aligning manifest namespaces with deployment target..."
                         sh "sed -i 's|namespace: default|namespace: ${NAMESPACE}|g' k8s/backend.yaml"
                         sh "sed -i 's|namespace: default|namespace: ${NAMESPACE}|g' k8s/frontend.yaml"
+                        sh "sed -i 's|namespace: default|namespace: ${NAMESPACE}|g' k8s/ai.yaml"
                         
                         echo "📥 Downloading portable kubectl binary..."
                         // Downloads a static kubectl binary directly into the pipeline workspace
@@ -389,10 +391,12 @@ pipeline {
                         // We explicitly pass the --kubeconfig flag pointing to our Jenkins secret file
                         sh "./kubectl --kubeconfig=\${KUBECONFIG_PATH} apply -f k8s/backend.yaml -n ${NAMESPACE}"
                         sh "./kubectl --kubeconfig=\${KUBECONFIG_PATH} apply -f k8s/frontend.yaml -n ${NAMESPACE}"
+                        sh "./kubectl --kubeconfig=\${KUBECONFIG_PATH} apply -f k8s/ai.yaml -n ${NAMESPACE}"
                         
                         echo "🔄 Verifying rollout status..."
                         sh "./kubectl --kubeconfig=${KUBECONFIG_PATH} rollout status deployment/healthsentinel-backend -n ${NAMESPACE}"
                         sh "./kubectl --kubeconfig=${KUBECONFIG_PATH} rollout status deployment/healthsentinel-frontend -n ${NAMESPACE}"
+                        sh "./kubectl --kubeconfig=\${KUBECONFIG_PATH} rollout status deployment/healthsentinel-ai -n ${NAMESPACE}"
                         
                         echo "✅ Deployment completed successfully!"
                     }
