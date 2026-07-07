@@ -21,7 +21,7 @@ spec:
         # --- ADD THIS BLOCK TO CONNECT TO THE BACKEND ---
         env:
         - name: NEXT_PUBLIC_API_URL
-          value: "http://a7e5615e53b9d409dbd857c5f7bbbc33-1309895825.eu-west-3.elb.amazonaws.com"
+          value: "/api"
         # ------------------------------------------------
 ---
 apiVersion: v1
