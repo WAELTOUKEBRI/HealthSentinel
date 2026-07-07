@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthsentinel-ai
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: healthsentinel-ai
+  template:
+    metadata:
+      labels:
+        app: healthsentinel-ai
+    spec:
+      containers:
+      - name: ai-service
+        image: 856021349334.dkr.ecr.eu-west-3.amazonaws.com/healthsentinel-ai:latest
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthsentinel-ai-service
+  namespace: default
+spec:
+  selector:
+    app: healthsentinel-ai
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
