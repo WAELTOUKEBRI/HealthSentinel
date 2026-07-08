@@ -52,7 +52,7 @@ export default function TrainingPage() {
     updateLog("Initiating SageMaker request...");
     
     try {
-      const response = await fetch("http://localhost:8000/api/training/start", {
+      const response = await fetch("http://aadcb1d08f2214eba917cd450850f6ea-1955653700.eu-west-3.elb.amazonaws.com/api/training/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "start" })
