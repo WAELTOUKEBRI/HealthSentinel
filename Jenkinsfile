@@ -225,7 +225,7 @@ pipeline {
           environment {
             // Define these explicitly here so Jenkins separates them cleanly from the shell script execution
             API_ENDPOINT = "/api"
-            WS_ENDPOINT  = ""ws://aadcb1d08f2214eba917cd450850f6ea-1955653700.eu-west-3.elb.amazonaws.com/ws/patients
+            WS_ENDPOINT  = "ws://aadcb1d08f2214eba917cd450850f6ea-1955653700.eu-west-3.elb.amazonaws.com/ws/patients"
         }
             steps {
                 dir('healthsentinel-frontend') {
