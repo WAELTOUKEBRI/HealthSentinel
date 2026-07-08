@@ -224,7 +224,7 @@ pipeline {
         stage('Frontend') {
           environment {
             // Define these explicitly here so Jenkins separates them cleanly from the shell script execution
-            API_ENDPOINT = "/api"
+            API_ENDPOINT = "http://aadcb1d08f2214eba917cd450850f6ea-1955653700.eu-west-3.elb.amazonaws.com/api"
             WS_ENDPOINT  = "ws://aadcb1d08f2214eba917cd450850f6ea-1955653700.eu-west-3.elb.amazonaws.com/ws/patients"
         }
             steps {
