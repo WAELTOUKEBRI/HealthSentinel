@@ -5,16 +5,27 @@
 [![Version](https://img.shields.io/badge/Version-1.0.0--stable-0EA5E9.svg?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-22C55E.svg?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/License-MIT-10B981.svg?style=for-the-badge)](#)
+[![HIPAA](https://img.shields.io/badge/Architecture-HIPAA%20Ready-0EA5E9.svg?style=for-the-badge)](#)
+
+[![Cloud](https://img.shields.io/badge/Cloud-AWS%20EKS%20eu--west--3-FF9900.svg?style=for-the-badge&logo=amazonaws)](#)
+[![Orchestration](https://img.shields.io/badge/Orchestration-Kubernetes-326CE5.svg?style=for-the-badge&logo=kubernetes)](#)
+[![Package Manager](https://img.shields.io/badge/Packaging-Helm%20v3-0F1624.svg?style=for-the-badge&logo=helm)](#)
+[![IaC](https://img.shields.io/badge/IaC-Terraform-7B42BC.svg?style=for-the-badge&logo=terraform)](#)
+
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Jenkins%20LTS-D24939.svg?style=for-the-badge&logo=jenkins)](#)
+[![GitOps](https://img.shields.io/badge/GitOps-ArgoCD%20v3.4.4-EF7B4D.svg?style=for-the-badge&logo=argocd)](#)
+[![DevSecOps Pipeline](https://img.shields.io/badge/Security-DevSecOps%20Pipeline-D32F2F.svg?style=for-the-badge&logo=aquasecurity)](#)
 [![SonarQube](https://img.shields.io/badge/SonarQube-Passed%20%E2%9C%94-22C55E.svg?style=for-the-badge&logo=sonarqube)](#)
 [![Coverage](https://img.shields.io/badge/Coverage-75.9%25-22C55E.svg?style=for-the-badge)](#)
-[![HIPAA](https://img.shields.io/badge/Architecture-HIPAA%20Ready-0EA5E9.svg?style=for-the-badge)](#)
-[![AWS EKS](https://img.shields.io/badge/Cloud-AWS%20EKS%20eu--west--3-FF9900.svg?style=for-the-badge&logo=amazonaws)](#)
-[![ArgoCD](https://img.shields.io/badge/GitOps-ArgoCD%20v3.4.4-EF7B4D.svg?style=for-the-badge&logo=argocd)](#)
-[![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins%20LTS-D24939.svg?style=for-the-badge&logo=jenkins)](#)
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](#)
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-000000.svg?style=for-the-badge&logo=nextjs)](#)
-[![Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg?style=for-the-badge&logo=docker)](#)
-[![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC.svg?style=for-the-badge&logo=terraform)](#)
+
+[![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C.svg?style=for-the-badge&logo=prometheus)](#)
+[![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46424.svg?style=for-the-badge&logo=grafana)](#)
+[![Loki & Promtail](https://img.shields.io/badge/Logging-Loki%20%26%20Promtail-61309B.svg?style=for-the-badge&logo=grafana)](#)
+[![CloudWatch](https://img.shields.io/badge/AWS%20Logs-CloudWatch-FF9900.svg?style=for-the-badge&logo=amazoncloudwatch)](#)
+
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](#)
+[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2016-000000.svg?style=for-the-badge&logo=nextdotjs)](#)
+[![Container](https://img.shields.io/badge/Container-Docker-2496ED.svg?style=for-the-badge&logo=docker)](#)
 
 </div>
 
