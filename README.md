@@ -535,11 +535,6 @@ Watch the live client web application, WebSockets telemetry synchronization, ala
 
 *(Note: If the streaming player above does not render immediately, GitHub's media servers may still be processing the high-resolution file. Please use the direct link above).
 
-
-
-
-
-
 ---
 
 ## 📈 Enterprise Roadmap
@@ -570,8 +565,8 @@ Watch the live client web application, WebSockets telemetry synchronization, ala
 HealthSentinel
 ├── assets/
 │   └── screenshots/
-│       ├── a.png - p.png         # Cluster, pipeline, and API screenshots
-│       └── healthsentinel-platform-demo.mp4                 # Walkthrough video demo
+│       ├── AWS CloudWatch Console EC2 Nodes CPU Metrics.png - SonarQube UI Your specific Quality Gate CriteriaConditions.png         # Cluster, pipeline, and API screenshots
+│       └── healthsentinel-demo-clean.mp4                 # Walkthrough video demo
 ├── healthsentinel-ai-service/
 │   ├── Dockerfile
 │   ├── main.py                   # FastAPI Scikit-Learn risk predictor
