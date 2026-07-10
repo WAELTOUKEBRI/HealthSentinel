@@ -1,21 +1,22 @@
 # 🏥 HealthSentinel — AI-Driven Clinical Risk & Patient Safety Platform
 
 <div align="center">
-![Version](https://img.shields.io/badge/version-1.0.0--stable-blue)
-![Status](https://img.shields.io/badge/status-active--development-green)
-![Platform](https://img.shields.io/badge/platform-AWS--EKS-orange)
-[![Version](https://img.shields.io/badge/version-2.3.0-0EA5E9.svg?style=for-the-badge)](#)
-[![License](https://img.shields.io/badge/license-MIT-10B981.svg?style=for-the-badge)](#)
+
+[![Version](https://img.shields.io/badge/Version-1.0.0--stable-0EA5E9.svg?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/Status-Active%20Development-22C55E.svg?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/License-MIT-10B981.svg?style=for-the-badge)](#)
 [![SonarQube](https://img.shields.io/badge/SonarQube-Passed%20%E2%9C%94-22C55E.svg?style=for-the-badge&logo=sonarqube)](#)
 [![Coverage](https://img.shields.io/badge/Coverage-75.9%25-22C55E.svg?style=for-the-badge)](#)
 [![HIPAA](https://img.shields.io/badge/Architecture-HIPAA%20Ready-0EA5E9.svg?style=for-the-badge)](#)
 [![AWS EKS](https://img.shields.io/badge/Cloud-AWS%20EKS%20eu--west--3-FF9900.svg?style=for-the-badge&logo=amazonaws)](#)
-[![ArgoCD](https://img.shields.io/badge/GitOps-ArgoCD%20v3.4.4-EF7B4D.svg?style=for-the-badge)](#)
+[![ArgoCD](https://img.shields.io/badge/GitOps-ArgoCD%20v3.4.4-EF7B4D.svg?style=for-the-badge&logo=argocd)](#)
 [![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins%20LTS-D24939.svg?style=for-the-badge&logo=jenkins)](#)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](#)
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-000000.svg?style=for-the-badge&logo=next.js)](#)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-000000.svg?style=for-the-badge&logo=nextjs)](#)
 [![Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg?style=for-the-badge&logo=docker)](#)
 [![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC.svg?style=for-the-badge&logo=terraform)](#)
+
+</div>
 
 **An enterprise-grade, cloud-native platform for real-time patient risk monitoring, staff training compliance, and AI-powered clinical decision support — engineered for ICUs, Emergency Wards, and high-acuity healthcare environments.**
 
