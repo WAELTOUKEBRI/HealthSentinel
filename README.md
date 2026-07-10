@@ -1,7 +1,9 @@
 # 🏥 HealthSentinel — AI-Driven Clinical Risk & Patient Safety Platform
 
 <div align="center">
-
+![Version](https://img.shields.io/badge/version-1.0.0--stable-blue)
+![Status](https://img.shields.io/badge/status-active--development-green)
+![Platform](https://img.shields.io/badge/platform-AWS--EKS-orange)
 [![Version](https://img.shields.io/badge/version-2.3.0-0EA5E9.svg?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-MIT-10B981.svg?style=for-the-badge)](#)
 [![SonarQube](https://img.shields.io/badge/SonarQube-Passed%20%E2%9C%94-22C55E.svg?style=for-the-badge&logo=sonarqube)](#)
@@ -494,6 +496,15 @@ Enterprise-grade cluster visibility is achieved through a monitoring stack integ
    Commit your changes to trigger the webhook or run a build manually in the Jenkins console to build, scan, and deploy images to EKS.
 
 ---
+
+---
+
+## 🗺️ Engineering Roadmap & Future Horizons
+HealthSentinel is actively maintained and built to scale. While **v1.0.0** establishes the baseline core microservices, monitoring infrastructure, and CI/CD pipelines, the following architectural enhancements are scheduled for upcoming releases:
+
+- [ ] **v1.1.0 — Multi-Region High Availability (HA):** Migrate stateful storage backends to cross-region AWS Aurora replicas to ensure absolute disaster recovery compliance.
+- [ ] **v1.2.0 — Enhanced DevSecOps Guardrails:** Integrate automated runtime security monitoring inside the EKS cluster utilizing Falco or AWS GuardDuty for real-time threat detection.
+- [ ] **v2.0.0 — Advanced AI Integration:** Upgrade the SageMaker asynchronous inference endpoints to handle real-time streaming predictive clinical metrics with automated model data drift tracking.
 
 ## 🖼️ Project Gallery
 
