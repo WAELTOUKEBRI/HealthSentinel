@@ -529,11 +529,17 @@ Enterprise-grade cluster visibility is achieved through a monitoring stack integ
 ### 🎥 Flagship UI Demonstration
 Watch the live client web application, WebSockets telemetry synchronization, alarm systems, SageMaker training workbench, and Kubernetes Control Plane dashboards:
 
-👉 **[🔗 Click Here to Open the Walkthrough Video in a New Tab](https://github.com/user-attachments/assets/cdbe6cb0-b0b3-4f9e-bc43-2287236a948d)**
+👉 **[🔗 Click Here to Open the Walkthrough Video in a New Tab](https://github.com/user-attachments/assets/7f453924-42ab-4096-865f-20c1242cad93)**
 
-<video src="https://github.com/user-attachments/assets/cdbe6cb0-b0b3-4f9e-bc43-2287236a948d" controls="controls" muted="muted" style="max-width: 100%; display: block;"></video>
+<video src="https://github.com/user-attachments/assets/7f453924-42ab-4096-865f-20c1242cad93" controls="controls" muted="muted" style="max-width: 100%; display: block;"></video>
 
 *(Note: If the streaming player above does not render immediately, GitHub's media servers may still be processing the high-resolution file. Please use the direct link above).
+
+
+
+
+
+
 ---
 
 ## 📈 Enterprise Roadmap
