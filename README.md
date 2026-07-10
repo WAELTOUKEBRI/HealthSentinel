@@ -500,30 +500,31 @@ Enterprise-grade cluster visibility is achieved through a monitoring stack integ
 ### 🌐 System Observability & Monitoring
 | Grafana Cluster Monitoring | Kubernetes Compute Pods |
 | :---: | :---: |
-| ![AWS EC2 CPU Load](assets/screenshots/a.png) <br> **Grafana: EC2 Worker CPU Load** | ![Node Pod Allocation](assets/screenshots/b.png) <br> **Grafana: Pod Compute Resource Allocations** |
+| ![AWS EC2 CPU Load](assets/screenshots/Grafana%20Dashboard%20EC2%20Worker%20CPU%20Load.png) <br> **Grafana: EC2 Worker CPU Load** | ![Node Pod Allocation](assets/screenshots/Grafana%20Dashboard%20Pod%20Compute%20Resource%20Allocations.png) <br> **Grafana: Pod Compute Resource Allocations** |
 | **Kubernetes Networking** | **Traffic Rate Monitor** |
-| ![Networking Bandwidth](assets/screenshots/c.png) <br> **Grafana: Cluster Network Throughput** | ![Traffic Rates](assets/screenshots/d.png) <br> **Grafana: Live API Traffic Rates** |
+| ![Networking Bandwidth](assets/screenshots/Grafana%20Dashboard%20Cluster%20Network%20Throughput.png) <br> **Grafana: Cluster Network Throughput** | ![Traffic Rates](assets/screenshots/Grafana%20Dashboard%20Live%20API%20Traffic%20Rates.png) <br> **Grafana: Live API Traffic Rates** |
 | **Pod Resource Consumption** | **Pod Capacity Limits** |
-| ![Pod Memory Util](assets/screenshots/e.png) <br> **Grafana: CPU/Memory Resource Utilization** | ![Pod Detailed Capacity](assets/screenshots/p.png) <br> **Grafana: Pod Capacity Limits & Load Logs** |
+| ![Pod Memory Util](assets/screenshots/Grafana%20Dashboard%20CPUMemory%20Resource%20Utilization.png) <br> **Grafana: CPU/Memory Resource Utilization** | ![Pod Detailed Capacity](assets/screenshots/Grafana%20Dashboard%20Pod%20Capacity%20Limits%20%26%20Load%20Logs.png) <br> **Grafana: Pod Capacity Limits & Load Logs** |
 
 ### ☁️ Infrastructure & Security Auditing
 | AWS CloudWatch Dashboard | SonarQube Analysis Results |
 | :---: | :---: |
-| ![CloudWatch CPU load](assets/screenshots/f.png) <br> **CloudWatch: AWS EC2 Nodes CPU Load** | ![SonarQube Quality Gate Passed](assets/screenshots/g.png) <br> **SonarQube: Quality Gate Analysis (Passed)** |
+| ![CloudWatch CPU load](assets/screenshots/AWS%20CloudWatch%20Console%20EC2%20Nodes%20CPU%20Metrics.png) <br> **CloudWatch: AWS EC2 Nodes CPU Load** | ![SonarQube Quality Gate Passed](assets/screenshots/SonarQube%20Dashboard%20Quality%20Gate%20Passed%20Status.png) <br> **SonarQube: Quality Gate Analysis (Passed)** |
 | **SonarQube Gate Setup** | **Jenkins Builds** |
-| ![SonarQube Gate Criteria](assets/screenshots/h.png) <br> **SonarQube: Quality Gate Conditions** | ![Jenkins Builds](assets/screenshots/i.png) <br> **Jenkins: Project Builds History Overview** |
+| ![SonarQube Gate Criteria](assets/screenshots/SonarQube%20UI%20Your%20specific%20Quality%20Gate%20CriteriaConditions.png) <br> **SonarQube: Quality Gate Conditions** | ![Jenkins Builds](assets/screenshots/Jenkins%20UI%20Multi-branch%20Project%20Build%20History%20Overview.png) <br> **Jenkins: Project Builds History Overview** |
 
 ### 🚀 Continuous Integration & API Docs
 | Jenkins CI/CD Pipeline | API Endpoint Swagger UI |
 | :---: | :---: |
-| ![Jenkins Pipeline execution](assets/screenshots/j.png) <br> **Jenkins: Multi-Branch Pipeline Stages** | ![API Swagger Retrain](assets/screenshots/k.png) <br> **Clinical API: Swagger docs (/api/training/start)** |
+| ![Jenkins Pipeline execution](assets/screenshots/Jenkins%20UI%20Successful%20Pipeline%20Execution%20Stages%20%28the%20green%20blocks%29.png) <br> **Jenkins: Multi-Branch Pipeline Stages** | ![API Swagger Retrain](assets/screenshots/FastAPI%20Swagger%20UI%20The%20apitrainingstart%20endpoint%20open.png) <br> **Clinical API: Swagger docs (/api/training/start)** |
 | **API Root Endpoint** | **API Staff & Patients Registry** |
-| ![API Swagger Root](assets/screenshots/l.png) <br> **Clinical API: Swagger docs (Root Endpoint)** | ![API Swagger Staff Patients](assets/screenshots/m.png) <br> **Clinical API: Swagger docs (/api/staff & /api/patients)** |
+| ![API Swagger Root](assets/screenshots/FastAPI%20Swagger%20UI%20The%20Root%20Endpoint%20open.png) <br> **Clinical API: Swagger docs (Root Endpoint)** | ![API Swagger Staff Patients](assets/screenshots/FastAPI%20Swagger%20UI%20The%20apistaff%20%26%20apipatients%20endpoints.png) <br> **Clinical API: Swagger docs (/api/staff & /api/patients)** |
 
 ### 🚢 GitOps Deployment State
 | ArgoCD OutOfSync State | ArgoCD Synced and Healthy State |
 | :---: | :---: |
-| ![ArgoCD OutOfSync app](assets/screenshots/n.png) <br> **ArgoCD: Pod Deployment Tree (OutOfSync state)** | ![ArgoCD Synced](assets/screenshots/o.png) <br> **ArgoCD: Successful Deployment Tree (Synced & Healthy)** |
+| ![ArgoCD OutOfSync app](assets/screenshots/ArgoCD%20UI%20Your%20app%20showing%20an%20OutOfSync%20state%20tree.png) <br> **ArgoCD: Pod Deployment Tree (OutOfSync state)** | ![ArgoCD Synced](assets/screenshots/ArgoCD%20UI%20Your%20app%20showing%20a%20green%20Synced%20%26%20Healthy%20state%20tree.png) <br> **ArgoCD: Successful Deployment Tree (Synced & Healthy)** |
+
 
 ### 🎥 Flagship UI Demonstration
 Watch the live client web application, WebSockets telemetry synchronization, alarm systems, SageMaker training workbench, and Kubernetes Control Plane dashboards:
@@ -532,8 +533,7 @@ Watch the live client web application, WebSockets telemetry synchronization, ala
 
 <video src="https://github.com/user-attachments/assets/cdbe6cb0-b0b3-4f9e-bc43-2287236a948d" controls="controls" muted="muted" style="max-width: 100%; display: block;"></video>
 
-*(Note: If the streaming player above does not render immediately, GitHub's media servers may still be processing the high-resolution file. Please use the direct link above).*
-
+*(Note: If the streaming player above does not render immediately, GitHub's media servers may still be processing the high-resolution file. Please use the direct link above).
 ---
 
 ## 📈 Enterprise Roadmap
