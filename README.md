@@ -2,18 +2,32 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.3.0-0EA5E9.svg?style=for-the-badge)](#)
-[![License](https://img.shields.io/badge/license-MIT-10B981.svg?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/Version-1.0.0--stable-0EA5E9.svg?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/Status-Active%20Development-22C55E.svg?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/License-MIT-10B981.svg?style=for-the-badge)](#)
+[![HIPAA](https://img.shields.io/badge/Architecture-HIPAA%20Ready-0EA5E9.svg?style=for-the-badge)](#)
+
+[![Cloud](https://img.shields.io/badge/Cloud-AWS%20EKS%20eu--west--3-FF9900.svg?style=for-the-badge&logo=amazonaws)](#)
+[![Orchestration](https://img.shields.io/badge/Orchestration-Kubernetes-326CE5.svg?style=for-the-badge&logo=kubernetes)](#)
+[![Package Manager](https://img.shields.io/badge/Packaging-Helm%20v3-0F1624.svg?style=for-the-badge&logo=helm)](#)
+[![IaC](https://img.shields.io/badge/IaC-Terraform-7B42BC.svg?style=for-the-badge&logo=terraform)](#)
+
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Jenkins%20LTS-D24939.svg?style=for-the-badge&logo=jenkins)](#)
+[![GitOps](https://img.shields.io/badge/GitOps-ArgoCD%20v3.4.4-EF7B4D.svg?style=for-the-badge&logo=argocd)](#)
+[![DevSecOps Pipeline](https://img.shields.io/badge/Security-DevSecOps%20Pipeline-D32F2F.svg?style=for-the-badge&logo=aquasecurity)](#)
 [![SonarQube](https://img.shields.io/badge/SonarQube-Passed%20%E2%9C%94-22C55E.svg?style=for-the-badge&logo=sonarqube)](#)
 [![Coverage](https://img.shields.io/badge/Coverage-75.9%25-22C55E.svg?style=for-the-badge)](#)
-[![HIPAA](https://img.shields.io/badge/Architecture-HIPAA%20Ready-0EA5E9.svg?style=for-the-badge)](#)
-[![AWS EKS](https://img.shields.io/badge/Cloud-AWS%20EKS%20eu--west--3-FF9900.svg?style=for-the-badge&logo=amazonaws)](#)
-[![ArgoCD](https://img.shields.io/badge/GitOps-ArgoCD%20v3.4.4-EF7B4D.svg?style=for-the-badge)](#)
-[![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins%20LTS-D24939.svg?style=for-the-badge&logo=jenkins)](#)
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](#)
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-000000.svg?style=for-the-badge&logo=next.js)](#)
-[![Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg?style=for-the-badge&logo=docker)](#)
-[![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC.svg?style=for-the-badge&logo=terraform)](#)
+
+[![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C.svg?style=for-the-badge&logo=prometheus)](#)
+[![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46424.svg?style=for-the-badge&logo=grafana)](#)
+[![Loki & Promtail](https://img.shields.io/badge/Logging-Loki%20%26%20Promtail-61309B.svg?style=for-the-badge&logo=grafana)](#)
+[![CloudWatch](https://img.shields.io/badge/AWS%20Logs-CloudWatch-FF9900.svg?style=for-the-badge&logo=amazoncloudwatch)](#)
+
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=for-the-badge&logo=fastapi)](#)
+[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2016-000000.svg?style=for-the-badge&logo=nextdotjs)](#)
+[![Container](https://img.shields.io/badge/Container-Docker-2496ED.svg?style=for-the-badge&logo=docker)](#)
+
+</div>
 
 **An enterprise-grade, cloud-native platform for real-time patient risk monitoring, staff training compliance, and AI-powered clinical decision support — engineered for ICUs, Emergency Wards, and high-acuity healthcare environments.**
 
@@ -495,42 +509,54 @@ Enterprise-grade cluster visibility is achieved through a monitoring stack integ
 
 ---
 
+---
+
+## 🗺️ Engineering Roadmap & Future Horizons
+HealthSentinel is actively maintained and built to scale. While **v1.0.0** establishes the baseline core microservices, monitoring infrastructure, and CI/CD pipelines, the following architectural enhancements are scheduled for upcoming releases:
+
+- [ ] **v1.1.0 — Multi-Region High Availability (HA):** Migrate stateful storage backends to cross-region AWS Aurora replicas to ensure absolute disaster recovery compliance.
+- [ ] **v1.2.0 — Enhanced DevSecOps Guardrails:** Integrate automated runtime security monitoring inside the EKS cluster utilizing Falco or AWS GuardDuty for real-time threat detection.
+- [ ] **v2.0.0 — Advanced AI Integration:** Upgrade the SageMaker asynchronous inference endpoints to handle real-time streaming predictive clinical metrics with automated model data drift tracking.
+
 ## 🖼️ Project Gallery
 
 ### 🌐 System Observability & Monitoring
 | Grafana Cluster Monitoring | Kubernetes Compute Pods |
 | :---: | :---: |
-| ![AWS EC2 CPU Load](assets/screenshots/a.png) <br> **Grafana: EC2 Worker CPU Load** | ![Node Pod Allocation](assets/screenshots/b.png) <br> **Grafana: Pod Compute Resource Allocations** |
+| ![AWS EC2 CPU Load](assets/screenshots/Grafana%20Dashboard%20EC2%20Worker%20CPU%20Load.png) <br> **Grafana: EC2 Worker CPU Load** | ![Node Pod Allocation](assets/screenshots/Grafana%20Dashboard%20Pod%20Compute%20Resource%20Allocations.png) <br> **Grafana: Pod Compute Resource Allocations** |
 | **Kubernetes Networking** | **Traffic Rate Monitor** |
-| ![Networking Bandwidth](assets/screenshots/c.png) <br> **Grafana: Cluster Network Throughput** | ![Traffic Rates](assets/screenshots/d.png) <br> **Grafana: Live API Traffic Rates** |
+| ![Networking Bandwidth](assets/screenshots/Grafana%20Dashboard%20Cluster%20Network%20Throughput.png) <br> **Grafana: Cluster Network Throughput** | ![Traffic Rates](assets/screenshots/Grafana%20Dashboard%20Live%20API%20Traffic%20Rates.png) <br> **Grafana: Live API Traffic Rates** |
 | **Pod Resource Consumption** | **Pod Capacity Limits** |
-| ![Pod Memory Util](assets/screenshots/e.png) <br> **Grafana: CPU/Memory Resource Utilization** | ![Pod Detailed Capacity](assets/screenshots/p.png) <br> **Grafana: Pod Capacity Limits & Load Logs** |
+| ![Pod Memory Util](assets/screenshots/Grafana%20Dashboard%20CPUMemory%20Resource%20Utilization.png) <br> **Grafana: CPU/Memory Resource Utilization** | ![Pod Detailed Capacity](assets/screenshots/Grafana%20Dashboard%20Pod%20Capacity%20Limits%20%26%20Load%20Logs.png) <br> **Grafana: Pod Capacity Limits & Load Logs** |
 
 ### ☁️ Infrastructure & Security Auditing
 | AWS CloudWatch Dashboard | SonarQube Analysis Results |
 | :---: | :---: |
-| ![CloudWatch CPU load](assets/screenshots/f.png) <br> **CloudWatch: AWS EC2 Nodes CPU Load** | ![SonarQube Quality Gate Passed](assets/screenshots/g.png) <br> **SonarQube: Quality Gate Analysis (Passed)** |
+| ![CloudWatch CPU load](assets/screenshots/AWS%20CloudWatch%20Console%20EC2%20Nodes%20CPU%20Metrics.png) <br> **CloudWatch: AWS EC2 Nodes CPU Load** | ![SonarQube Quality Gate Passed](assets/screenshots/SonarQube%20Dashboard%20Quality%20Gate%20Passed%20Status.png) <br> **SonarQube: Quality Gate Analysis (Passed)** |
 | **SonarQube Gate Setup** | **Jenkins Builds** |
-| ![SonarQube Gate Criteria](assets/screenshots/h.png) <br> **SonarQube: Quality Gate Conditions** | ![Jenkins Builds](assets/screenshots/i.png) <br> **Jenkins: Project Builds History Overview** |
+| ![SonarQube Gate Criteria](assets/screenshots/SonarQube%20UI%20Your%20specific%20Quality%20Gate%20CriteriaConditions.png) <br> **SonarQube: Quality Gate Conditions** | ![Jenkins Builds](assets/screenshots/Jenkins%20UI%20Multi-branch%20Project%20Build%20History%20Overview.png) <br> **Jenkins: Project Builds History Overview** |
 
 ### 🚀 Continuous Integration & API Docs
 | Jenkins CI/CD Pipeline | API Endpoint Swagger UI |
 | :---: | :---: |
-| ![Jenkins Pipeline execution](assets/screenshots/j.png) <br> **Jenkins: Multi-Branch Pipeline Stages** | ![API Swagger Retrain](assets/screenshots/k.png) <br> **Clinical API: Swagger docs (/api/training/start)** |
+| ![Jenkins Pipeline execution](assets/screenshots/Jenkins%20UI%20Successful%20Pipeline%20Execution%20Stages%20%28the%20green%20blocks%29.png) <br> **Jenkins: Multi-Branch Pipeline Stages** | ![API Swagger Retrain](assets/screenshots/FastAPI%20Swagger%20UI%20The%20apitrainingstart%20endpoint%20open.png) <br> **Clinical API: Swagger docs (/api/training/start)** |
 | **API Root Endpoint** | **API Staff & Patients Registry** |
-| ![API Swagger Root](assets/screenshots/l.png) <br> **Clinical API: Swagger docs (Root Endpoint)** | ![API Swagger Staff Patients](assets/screenshots/m.png) <br> **Clinical API: Swagger docs (/api/staff & /api/patients)** |
+| ![API Swagger Root](assets/screenshots/FastAPI%20Swagger%20UI%20The%20Root%20Endpoint%20open.png) <br> **Clinical API: Swagger docs (Root Endpoint)** | ![API Swagger Staff Patients](assets/screenshots/FastAPI%20Swagger%20UI%20The%20apistaff%20%26%20apipatients%20endpoints.png) <br> **Clinical API: Swagger docs (/api/staff & /api/patients)** |
 
 ### 🚢 GitOps Deployment State
 | ArgoCD OutOfSync State | ArgoCD Synced and Healthy State |
 | :---: | :---: |
-| ![ArgoCD OutOfSync app](assets/screenshots/n.png) <br> **ArgoCD: Pod Deployment Tree (OutOfSync state)** | ![ArgoCD Synced](assets/screenshots/o.png) <br> **ArgoCD: Successful Deployment Tree (Synced & Healthy)** |
+| ![ArgoCD OutOfSync app](assets/screenshots/ArgoCD%20UI%20Your%20app%20showing%20an%20OutOfSync%20state%20tree.png) <br> **ArgoCD: Pod Deployment Tree (OutOfSync state)** | ![ArgoCD Synced](assets/screenshots/ArgoCD%20UI%20Your%20app%20showing%20a%20green%20Synced%20%26%20Healthy%20state%20tree.png) <br> **ArgoCD: Successful Deployment Tree (Synced & Healthy)** |
+
 
 ### 🎥 Flagship UI Demonstration
 Watch the live client web application, WebSockets telemetry synchronization, alarm systems, SageMaker training workbench, and Kubernetes Control Plane dashboards:
 
-https://github.com/user-attachments/assets/cdbe6cb0-b0b3-4f9e-bc43-2287236a948d
+👉 **[🔗 Click Here to Open the Walkthrough Video in a New Tab](https://github.com/user-attachments/assets/7f453924-42ab-4096-865f-20c1242cad93)**
 
-*(Note: The demonstration video file is stored locally in the directory [healthsentinel-platform-demo.mp4](assets/screenshots/healthsentinel-platform-demo.mp4)).*
+<video src="https://github.com/user-attachments/assets/7f453924-42ab-4096-865f-20c1242cad93" controls="controls" muted="muted" style="max-width: 100%; display: block;"></video>
+
+*(Note: If the streaming player above does not render immediately, GitHub's media servers may still be processing the high-resolution file. Please use the direct link above).
 
 ---
 
@@ -562,8 +588,8 @@ https://github.com/user-attachments/assets/cdbe6cb0-b0b3-4f9e-bc43-2287236a948d
 HealthSentinel
 ├── assets/
 │   └── screenshots/
-│       ├── a.png - p.png         # Cluster, pipeline, and API screenshots
-│       └── healthsentinel-platform-demo.mp4                 # Walkthrough video demo
+│       ├── AWS CloudWatch Console EC2 Nodes CPU Metrics.png - SonarQube UI Your specific Quality Gate CriteriaConditions.png         # Cluster, pipeline, and API screenshots
+│       └── healthsentinel-demo-clean.mp4                 # Walkthrough video demo
 ├── healthsentinel-ai-service/
 │   ├── Dockerfile
 │   ├── main.py                   # FastAPI Scikit-Learn risk predictor
