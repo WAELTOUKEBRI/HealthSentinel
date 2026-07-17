@@ -511,8 +511,6 @@ Watch the live client web application, WebSockets telemetry synchronization, ala
 HealthSentinel
 ├── assets/
 │   └── screenshots/
-│       ├── AWS CloudWatch Console EC2 Nodes CPU Metrics.png - SonarQube UI Your specific Quality Gate CriteriaConditions.png         # Cluster, pipeline, and API screenshots
-│       └── healthsentinel-demo-clean.mp4                 # Walkthrough video demo
 ├── healthsentinel-ai-service/
 │   ├── Dockerfile
 │   ├── main.py                   # FastAPI Scikit-Learn risk predictor
