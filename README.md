@@ -245,7 +245,7 @@ The pipeline is implemented inside a unified [Jenkinsfile](file:///c:/Users/wael
 
 ### Pipeline Execution Flow
 
-![HealthSentinel — Secure DevSecOps CI/CD Pipeline](./assets/screenshots/HealthSentinel%20-%20Secure%20DevSecOps%20CI_CD%20Pipeline.png)
+![HealthSentinel — Secure DevSecOps CI/CD Pipeline](./assets/screenshots/HealthSentinel%20—%20Secure%20DevSecOps%20CICD%20Pipeline.png)
 
 - **Jenkins Integration**:
   - Automatically triggered by GitHub webhooks.
