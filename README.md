@@ -96,55 +96,9 @@ Hospitals and clinics face a two-front operational crisis:
 
 ### High-Level Cloud Architecture
 
-```
-Internet Users
-      │
-      ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    AWS Cloud — eu-west-3 (Paris)                    │
-│                                                                     │
-│  CloudFront CDN                                                     │
-│      │                                                              │
-│      ▼                                                              │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │           AWS EKS Cluster — healthsentinel-cluster           │   │
-│  │                                                             │   │
-│  │  ┌──────────┐   ┌──────────────┐   ┌────────────────────┐  │   │
-│  │  │ hs-proxy │   │ hs-frontend  │   │    hs-backend       │  │   │
-│  │  │  NGINX   │──►│  Next.js 16  │   │  FastAPI / Python   │  │   │
-│  │  │ Alpine   │   │   React 19   │   │  WebSocket Engine   │  │   │
-│  │  └──────────┘   └──────────────┘   └─────────┬──────────┘  │   │
-│  │                                               │             │   │
-│  │                          ┌────────────────────┤             │   │
-│  │                          │                    │             │   │
-│  │                    ┌─────▼──────┐   ┌────────▼──────────┐  │   │
-│  │                    │   hs-db    │   │  hs-ai-service    │  │   │
-│  │                    │ PostgreSQL │   │  FastAPI + Sklearn │  │   │
-│  │                    │    16      │   │   model.pkl        │  │   │
-│  │                    └────────────┘   └───────────────────┘  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────────────┐  │
-│  │ AWS RDS  │  │ AWS ECR  │  │  AWS S3  │  │  AWS CloudWatch    │  │
-│  │Postgres  │  │Container │  │ Artifacts│  │  Metrics & Alerts  │  │
-│  │ Private  │  │Registry  │  │& ML Data │  │                    │  │
-│  └──────────┘  └──────────┘  └──────────┘  └────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-```
+![HealthSentinel Cloud Architecture](./assets/screenshots/assetshealthsentinel-architecture.png)
 
-```mermaid
-graph TD
-    User["🏥 Clinical Staff / Browser"] -->|HTTPS / WSS| Proxy["🔒 NGINX Reverse Proxy\nhs-proxy"]
-    Proxy -->|SPA routing| Frontend["🌐 Next.js 16\nhs-frontend"]
-    Proxy -->|REST + WebSocket| Backend["⚙️ FastAPI\nhs-backend"]
-    Backend -->|Prisma ORM| DB[("🗄️ PostgreSQL 16\nhs-db")]
-    Backend -->|POST /predict| AIService["🧠 AI Inference\nhs-ai-service"]
-    AIService -->|joblib.load| Model["💾 Scikit-Learn\nmodel.pkl"]
-    Backend -->|boto3 SDK| CloudWatch["📊 AWS CloudWatch"]
-    Grafana["📈 Grafana"] -->|PromQL| Prometheus["🔥 Prometheus"]
-    Prometheus -->|scrape| Backend & AIService
-    Loki["📋 Loki"] -->|log aggregation| Backend
-```
+![System Architecture](./assets/screenshots/System%20Architecture.png)
 
 ### Component Breakdown
 
@@ -207,32 +161,7 @@ Every `git push` to `main` triggers a Jenkins pipeline that security-scans, qual
 
 HealthSentinel is built on a highly modular, decoupled, and containerized architecture designed for 99.9% uptime and low-latency data processing:
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                          PRESENTATION LAYER                            │
-│           Next.js 16 (App Router) + React 19 + Tailwind CSS            │
-│               Lucide Icons + Framer Motion + Shadcn/ui                 │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-                     REST API / Secure WebSockets
-                                   │
-┌──────────────────────────────────▼─────────────────────────────────────┐
-│                            SERVICES LAYER                              │
-│              Nginx Ingress Gateway (Reverse Proxy / TLS)               │
-│                                  │
-├──────────────────────────────────┼─────────────────────────────────────┤
-│         APPLICATION API          │         AI INFERENCE ENGINE         │
-│     FastAPI + Python 3.12        │        FastAPI + Scikit-Learn       │
-│  Prisma Client + asyncio ws      │        joblib model loader          │
-└────────────────┬─────────────────┴──────────────────┬──────────────────┘
-                 │                                    │
-           Prisma Client                          Inference
-                 │                                    │
-┌────────────────▼─────────────────┐        ┌─────────▼──────────────────┐
-│          DATABASE LAYER          │        │       AWS SERVICES         │
-│     PostgreSQL 16 (AWS RDS)      │        │ S3 + CloudWatch + ECR      │
-└──────────────────────────────────┘        └────────────────────────────┘
-```
+![HealthSentinel Logical System Architecture](./assets/screenshots/HealthSentinel%20Logical%20System%20Architecture.png)
 
 - **Frontend Application**:
   - **Framework**: Next.js 16 (App Router) & React 19 for rendering optimization and server-side safety layers.
@@ -316,20 +245,7 @@ The pipeline is implemented inside a unified [Jenkinsfile](file:///c:/Users/wael
 
 ### Pipeline Execution Flow
 
-```mermaid
-graph TD
-    Checkout[📥 Checkout] --> Gitleaks[🔑 Gitleaks Parallel]
-    Checkout --> Bandit[🐍 Bandit Parallel]
-    Gitleaks & Bandit --> Hadolint[🐳 Docker Lint]
-    Hadolint --> PrismaVal[🗃️ Schema Validation]
-    PrismaVal --> TestBackend[🧪 Pytest Parallel]
-    PrismaVal --> TestFrontend[🧪 Jest Parallel]
-    TestBackend & TestFrontend --> BuildImages[🏗️ Docker Build]
-    BuildImages --> TrivyScan[🛡️ Trivy Scan]
-    TrivyScan --> SonarQube[📊 SonarQube Quality Gate]
-    SonarQube --> ECRPush[🚀 Push to AWS ECR]
-    ECRPush --> EKSDeploy[🚢 Deploy to AWS EKS]
-```
+![HealthSentinel — Secure DevSecOps CI/CD Pipeline](./assets/screenshots/HealthSentinel%20-%20Secure%20DevSecOps%20CI_CD%20Pipeline.png)
 
 - **Jenkins Integration**:
   - Automatically triggered by GitHub webhooks.
